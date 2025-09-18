@@ -18,13 +18,11 @@ export async function runMigrations() {
     console.log('🔄 Running database migrations...');
     
     // Create all tables using the schema
-    await db.execute(`
-      -- Create enums
-      CREATE TYPE IF NOT EXISTS employee_status AS ENUM ('ativo', 'inativo', 'afastado');
-      CREATE TYPE IF NOT EXISTS vacation_status AS ENUM ('pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado');
-      CREATE TYPE IF NOT EXISTS termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');
-      CREATE TYPE IF NOT EXISTS payment_status AS ENUM ('pendente', 'processado', 'pago');
-    `);
+    // Create enums
+    await db.execute(`CREATE TYPE IF NOT EXISTS employee_status AS ENUM ('ativo', 'inativo', 'afastado');`);
+    await db.execute(`CREATE TYPE IF NOT EXISTS vacation_status AS ENUM ('pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado');`);
+    await db.execute(`CREATE TYPE IF NOT EXISTS termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`);
+    await db.execute(`CREATE TYPE IF NOT EXISTS payment_status AS ENUM ('pendente', 'processado', 'pago');`);
 
     // Create users table
     await db.execute(`
