@@ -15,20 +15,59 @@ import Permissions from "@/pages/permissions";
 import NotFound from "@/pages/not-found";
 
 function Router() {
+  const [location] = useLocation();
+  
+  // Redirecionar para login se não estiver logado
+  if (location === "/" && !localStorage.getItem("isLoggedIn")) {
+    window.location.href = "/login";
+    return null;
+  }
+
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/branches" component={Branches} />
-        <Route path="/employees" component={Employees} />
-        <Route path="/vacations" component={Vacations} />
-        <Route path="/terminations" component={Terminations} />
-        <Route path="/advances" component={Advances} />
-        <Route path="/payroll" component={Payroll} />
-        <Route path="/permissions" component={Permissions} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/" component={() => (
+        <Layout>
+          <Dashboard />
+        </Layout>
+      )} />
+      <Route path="/branches" component={() => (
+        <Layout>
+          <Branches />
+        </Layout>
+      )} />
+      <Route path="/employees" component={() => (
+        <Layout>
+          <Employees />
+        </Layout>
+      )} />
+      <Route path="/vacations" component={() => (
+        <Layout>
+          <Vacations />
+        </Layout>
+      )} />
+      <Route path="/terminations" component={() => (
+        <Layout>
+          <Terminations />
+        </Layout>
+      )} />
+      <Route path="/advances" component={() => (
+        <Layout>
+          <Advances />
+        </Layout>
+      )} />
+      <Route path="/payroll" component={() => (
+        <Layout>
+          <Payroll />
+        </Layout>
+      )} />
+      <Route path="/permissions" component={() => (
+        <Layout>
+          <Permissions />
+        </Layout>
+      )} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 

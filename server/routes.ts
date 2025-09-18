@@ -13,9 +13,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Users routes
   app.get("/api/users", async (req, res) => {
     try {
+      console.log("🔍 [API] GET /api/users - Iniciando busca de usuários");
       const users = await storage.getUsers();
+      console.log("✅ [API] GET /api/users - Usuários encontrados:", users.length);
+      console.log("📋 [API] GET /api/users - Dados:", JSON.stringify(users, null, 2));
       res.json(users);
     } catch (error) {
+      console.error("❌ [API] GET /api/users - Erro:", error);
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });

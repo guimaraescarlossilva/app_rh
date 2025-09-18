@@ -138,7 +138,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(asc(users.name));
+    try {
+      console.log("🔍 [STORAGE] getUsers - Iniciando consulta no banco");
+      const result = await db.select().from(users).orderBy(asc(users.name));
+      console.log("✅ [STORAGE] getUsers - Consulta executada com sucesso");
+      console.log("📊 [STORAGE] getUsers - Registros encontrados:", result.length);
+      console.log("📋 [STORAGE] getUsers - Dados:", JSON.stringify(result, null, 2));
+      return result;
+    } catch (error) {
+      console.error("❌ [STORAGE] getUsers - Erro na consulta:", error);
+      throw error;
+    }
   }
 
   // Permission Groups
