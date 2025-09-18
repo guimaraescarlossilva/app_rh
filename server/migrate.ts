@@ -17,8 +17,8 @@ export async function runMigrations() {
   try {
     console.log('🔄 Running database migrations...');
     
-    // Drop existing tables if they exist (in correct order due to foreign keys)
-    console.log('🧹 Cleaning existing tables...');
+    // Drop existing tables in rh_db schema only (in correct order due to foreign keys)
+    console.log('🧹 Cleaning existing tables in rh_db schema...');
     const tablesToDrop = [
       'payroll', 'advances', 'terminations', 'vacations', 
       'employees', 'job_positions', 'module_permissions', 
@@ -27,34 +27,34 @@ export async function runMigrations() {
     
     for (const table of tablesToDrop) {
       try {
-        await db.execute(`DROP TABLE IF EXISTS ${table} CASCADE;`);
-        console.log(`Dropped table: ${table}`);
+        await db.execute(`DROP TABLE IF EXISTS rh_db.${table} CASCADE;`);
+        console.log(`Dropped table: rh_db.${table}`);
       } catch (e) {
-        console.log(`Table ${table} did not exist or could not be dropped`);
+        console.log(`Table rh_db.${table} did not exist or could not be dropped`);
       }
     }
     
-    // Drop existing types if they exist
+    // Drop existing types in rh_db schema only
     const typesToDrop = ['payment_status', 'termination_reason', 'vacation_status', 'employee_status'];
     for (const type of typesToDrop) {
       try {
-        await db.execute(`DROP TYPE IF EXISTS ${type} CASCADE;`);
-        console.log(`Dropped type: ${type}`);
+        await db.execute(`DROP TYPE IF EXISTS rh_db.${type} CASCADE;`);
+        console.log(`Dropped type: rh_db.${type}`);
       } catch (e) {
-        console.log(`Type ${type} did not exist or could not be dropped`);
+        console.log(`Type rh_db.${type} did not exist or could not be dropped`);
       }
     }
     
-    // Create enums
-    console.log('📝 Creating enums...');
-    await db.execute(`CREATE TYPE employee_status AS ENUM ('ativo', 'inativo', 'afastado');`);
-    await db.execute(`CREATE TYPE vacation_status AS ENUM ('pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado');`);
-    await db.execute(`CREATE TYPE termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`);
-    await db.execute(`CREATE TYPE payment_status AS ENUM ('pendente', 'processado', 'pago');`);
+    // Create enums in rh_db schema
+    console.log('📝 Creating enums in rh_db schema...');
+    await db.execute(`CREATE TYPE rh_db.employee_status AS ENUM ('ativo', 'inativo', 'afastado');`);
+    await db.execute(`CREATE TYPE rh_db.vacation_status AS ENUM ('pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado');`);
+    await db.execute(`CREATE TYPE rh_db.termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`);
+    await db.execute(`CREATE TYPE rh_db.payment_status AS ENUM ('pendente', 'processado', 'pago');`);
 
-    // Create users table
+    // Create users table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE IF NOT EXISTS rh_db.users (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
@@ -64,9 +64,9 @@ export async function runMigrations() {
       );
     `);
 
-    // Create permission_groups table
+    // Create permission_groups table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS permission_groups (
+      CREATE TABLE IF NOT EXISTS rh_db.permission_groups (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT NOT NULL UNIQUE,
         description TEXT,
@@ -74,21 +74,21 @@ export async function runMigrations() {
       );
     `);
 
-    // Create user_groups table
+    // Create user_groups table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS user_groups (
+      CREATE TABLE IF NOT EXISTS rh_db.user_groups (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        group_id VARCHAR NOT NULL REFERENCES permission_groups(id) ON DELETE CASCADE,
+        user_id VARCHAR NOT NULL REFERENCES rh_db.users(id) ON DELETE CASCADE,
+        group_id VARCHAR NOT NULL REFERENCES rh_db.permission_groups(id) ON DELETE CASCADE,
         assigned_at TIMESTAMP DEFAULT now() NOT NULL
       );
     `);
 
-    // Create module_permissions table
+    // Create module_permissions table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS module_permissions (
+      CREATE TABLE IF NOT EXISTS rh_db.module_permissions (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        group_id VARCHAR NOT NULL REFERENCES permission_groups(id) ON DELETE CASCADE,
+        group_id VARCHAR NOT NULL REFERENCES rh_db.permission_groups(id) ON DELETE CASCADE,
         module TEXT NOT NULL,
         can_read BOOLEAN DEFAULT false NOT NULL,
         can_create BOOLEAN DEFAULT false NOT NULL,
@@ -97,9 +97,9 @@ export async function runMigrations() {
       );
     `);
 
-    // Create job_positions table
+    // Create job_positions table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS job_positions (
+      CREATE TABLE IF NOT EXISTS rh_db.job_positions (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT NOT NULL UNIQUE,
         description TEXT,
@@ -108,52 +108,52 @@ export async function runMigrations() {
       );
     `);
 
-    // Create employees table
+    // Create employees table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS employees (
+      CREATE TABLE IF NOT EXISTS rh_db.employees (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT NOT NULL,
         cpf TEXT NOT NULL UNIQUE,
         email TEXT,
         phone TEXT,
         address TEXT,
-        position_id VARCHAR REFERENCES job_positions(id),
+        position_id VARCHAR REFERENCES rh_db.job_positions(id),
         admission_date DATE NOT NULL,
         base_salary DECIMAL(10,2) NOT NULL,
         agreed_salary DECIMAL(10,2) NOT NULL,
         advance_percentage DECIMAL(5,2) DEFAULT 40.00,
-        status employee_status DEFAULT 'ativo' NOT NULL,
+        status rh_db.employee_status DEFAULT 'ativo' NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         updated_at TIMESTAMP DEFAULT now() NOT NULL
       );
     `);
 
-    // Create vacations table
+    // Create vacations table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS vacations (
+      CREATE TABLE IF NOT EXISTS rh_db.vacations (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        employee_id VARCHAR NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+        employee_id VARCHAR NOT NULL REFERENCES rh_db.employees(id) ON DELETE CASCADE,
         acquisition_period_start DATE NOT NULL,
         acquisition_period_end DATE NOT NULL,
         enjoyment_limit DATE NOT NULL,
         enjoyment_period_start DATE,
         enjoyment_period_end DATE,
         days INTEGER NOT NULL DEFAULT 30,
-        status vacation_status DEFAULT 'pendente' NOT NULL,
+        status rh_db.vacation_status DEFAULT 'pendente' NOT NULL,
         notes TEXT,
         created_at TIMESTAMP DEFAULT now() NOT NULL,
         approved_at TIMESTAMP,
-        approved_by VARCHAR REFERENCES users(id)
+        approved_by VARCHAR REFERENCES rh_db.users(id)
       );
     `);
 
-    // Create terminations table
+    // Create terminations table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS terminations (
+      CREATE TABLE IF NOT EXISTS rh_db.terminations (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        employee_id VARCHAR NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+        employee_id VARCHAR NOT NULL REFERENCES rh_db.employees(id) ON DELETE CASCADE,
         termination_date DATE NOT NULL,
-        reason termination_reason NOT NULL,
+        reason rh_db.termination_reason NOT NULL,
         description TEXT,
         receipt_issued BOOLEAN DEFAULT false,
         fgts_released BOOLEAN DEFAULT false,
@@ -163,27 +163,27 @@ export async function runMigrations() {
       );
     `);
 
-    // Create advances table
+    // Create advances table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS advances (
+      CREATE TABLE IF NOT EXISTS rh_db.advances (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        employee_id VARCHAR NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+        employee_id VARCHAR NOT NULL REFERENCES rh_db.employees(id) ON DELETE CASCADE,
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,
         base_amount DECIMAL(10,2) NOT NULL,
         percentage DECIMAL(5,2) NOT NULL,
         advance_amount DECIMAL(10,2) NOT NULL,
         payment_date DATE,
-        status payment_status DEFAULT 'pendente' NOT NULL,
+        status rh_db.payment_status DEFAULT 'pendente' NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL
       );
     `);
 
-    // Create payroll table
+    // Create payroll table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS payroll (
+      CREATE TABLE IF NOT EXISTS rh_db.payroll (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        employee_id VARCHAR NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+        employee_id VARCHAR NOT NULL REFERENCES rh_db.employees(id) ON DELETE CASCADE,
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,
         base_salary DECIMAL(10,2) NOT NULL,
@@ -213,7 +213,7 @@ export async function runMigrations() {
         absences DECIMAL(10,2) DEFAULT 0.00,
         absence_reason TEXT,
         net_amount DECIMAL(10,2) NOT NULL,
-        status payment_status DEFAULT 'pendente' NOT NULL,
+        status rh_db.payment_status DEFAULT 'pendente' NOT NULL,
         processed_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT now() NOT NULL
       );
