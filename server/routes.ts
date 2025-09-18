@@ -273,10 +273,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/branches", async (req, res) => {
     try {
+      console.log("🔍 [API] POST /api/branches - Validando dados:", req.body);
       const validatedData = insertBranchSchema.parse(req.body);
+      console.log("✅ [API] POST /api/branches - Dados validados:", validatedData);
       const branch = await storage.createBranch(validatedData);
+      console.log("✅ [API] POST /api/branches - Filial criada:", branch);
       res.status(201).json(branch);
     } catch (error) {
+      console.error("❌ [API] POST /api/branches - Erro de validação:", error);
       res.status(400).json({ message: "Invalid branch data" });
     }
   });

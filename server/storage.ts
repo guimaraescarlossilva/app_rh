@@ -281,8 +281,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBranch(branch: InsertBranch): Promise<Branch> {
-    const [newBranch] = await db.insert(branches).values(branch).returning();
-    return newBranch;
+    try {
+      console.log("🔍 [STORAGE] createBranch - Inserindo filial:", branch);
+      const [newBranch] = await db.insert(branches).values(branch).returning();
+      console.log("✅ [STORAGE] createBranch - Filial inserida:", newBranch);
+      return newBranch;
+    } catch (error) {
+      console.error("❌ [STORAGE] createBranch - Erro na inserção:", error);
+      throw error;
+    }
   }
 
   async updateBranch(id: string, branch: Partial<InsertBranch>): Promise<Branch> {
