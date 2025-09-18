@@ -249,6 +249,36 @@ export async function runMigrations() {
       );
     `);
 
+    // Create default branch if none exists
+    console.log('🏢 Creating default branch...');
+    const existingBranches = await db.execute(`SELECT COUNT(*) as count FROM rh_db.branches;`);
+    const branchCount = parseInt(existingBranches.rows[0]?.count || '0');
+    
+    if (branchCount === 0) {
+      await db.execute(`
+        INSERT INTO rh_db.branches (
+          fantasy_name, address, phone, email, cnpj, city, state, 
+          neighborhood, zip_code, active, created_at, updated_at
+        ) VALUES (
+          'Filial Principal',
+          'Endereço da Filial Principal',
+          '(00) 0000-0000',
+          'contato@empresa.com',
+          '00.000.000/0001-00',
+          'São Paulo',
+          'SP',
+          'Centro',
+          '00000-000',
+          true,
+          now(),
+          now()
+        );
+      `);
+      console.log('✅ Default branch created successfully!');
+    } else {
+      console.log('ℹ️ Branches already exist, skipping default branch creation');
+    }
+
     console.log('✅ Database migrations completed successfully!');
     
   } catch (error) {

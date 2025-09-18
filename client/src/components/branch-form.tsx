@@ -33,7 +33,19 @@ export default function BranchForm({
   onCancel, 
   isLoading = false 
 }: BranchFormProps) {
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+    defaultValues: {
+      fantasyName: "",
+      address: "",
+      phone: "",
+      email: "",
+      cnpj: "",
+      city: "",
+      state: "",
+      neighborhood: "",
+      zipCode: "",
+    }
+  });
   const [active, setActive] = useState(true);
 
   useEffect(() => {
@@ -75,6 +87,12 @@ export default function BranchForm({
   };
 
   const handleFormSubmit = (data: any) => {
+    // Validate required fields
+    if (!data.state) {
+      alert("Por favor, selecione um estado");
+      return;
+    }
+    
     onSubmit({
       ...data,
       active,
@@ -158,7 +176,11 @@ export default function BranchForm({
 
         <div className="space-y-2">
           <Label htmlFor="state">Estado *</Label>
-          <Select onValueChange={(value) => setValue("state", value)}>
+          <Select 
+            onValueChange={(value) => setValue("state", value)} 
+            defaultValue={watch("state")}
+            value={watch("state")}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o estado" />
             </SelectTrigger>
