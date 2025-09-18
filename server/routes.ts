@@ -5,7 +5,7 @@ import {
   insertUserSchema, insertPermissionGroupSchema, insertUserGroupSchema,
   insertModulePermissionSchema, insertJobPositionSchema, insertEmployeeSchema,
   insertVacationSchema, insertTerminationSchema, insertAdvanceSchema,
-  insertPayrollSchema
+  insertPayrollSchema, insertBranchSchema
 } from "@shared/schema";
 import bcrypt from "bcrypt";
 
@@ -199,6 +199,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete position" });
+    }
+  });
+
+  // Branches routes
+  app.get("/api/branches", async (req, res) => {
+    try {
+      const branches = await storage.getBranches();
+      res.json(branches);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch branches" });
+    }
+  });
+
+  app.get("/api/branches/:id", async (req, res) => {
+    try {
+      const branch = await storage.getBranch(req.params.id);
+      if (!branch) {
+        return res.status(404).json({ message: "Branch not found" });
+      }
+      res.json(branch);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch branch" });
+    }
+  });
+
+  app.post("/api/branches", async (req, res) => {
+    try {
+      const validatedData = insertBranchSchema.parse(req.body);
+      const branch = await storage.createBranch(validatedData);
+      res.status(201).json(branch);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid branch data" });
+    }
+  });
+
+  app.put("/api/branches/:id", async (req, res) => {
+    try {
+      const branch = await storage.updateBranch(req.params.id, req.body);
+      res.json(branch);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update branch" });
+    }
+  });
+
+  app.delete("/api/branches/:id", async (req, res) => {
+    try {
+      await storage.deleteBranch(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete branch" });
     }
   });
 

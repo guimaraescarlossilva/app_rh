@@ -1,11 +1,12 @@
 import {
   users, permissionGroups, userGroups, modulePermissions, jobPositions,
-  employees, vacations, terminations, advances, payroll,
+  employees, vacations, terminations, advances, payroll, branches,
   type User, type InsertUser, type PermissionGroup, type InsertPermissionGroup,
   type UserGroup, type InsertUserGroup, type ModulePermission, type InsertModulePermission,
   type JobPosition, type InsertJobPosition, type Employee, type InsertEmployee,
   type Vacation, type InsertVacation, type Termination, type InsertTermination,
-  type Advance, type InsertAdvance, type Payroll, type InsertPayroll
+  type Advance, type InsertAdvance, type Payroll, type InsertPayroll,
+  type Branch, type InsertBranch
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, sql, count } from "drizzle-orm";
@@ -42,6 +43,13 @@ export interface IStorage {
   createJobPosition(position: InsertJobPosition): Promise<JobPosition>;
   updateJobPosition(id: string, position: Partial<InsertJobPosition>): Promise<JobPosition>;
   deleteJobPosition(id: string): Promise<void>;
+
+  // Branches
+  getBranches(): Promise<Branch[]>;
+  getBranch(id: string): Promise<Branch | undefined>;
+  createBranch(branch: InsertBranch): Promise<Branch>;
+  updateBranch(id: string, branch: Partial<InsertBranch>): Promise<Branch>;
+  deleteBranch(id: string): Promise<void>;
 
   // Employees
   getEmployees(): Promise<Employee[]>;
@@ -240,6 +248,34 @@ export class DatabaseStorage implements IStorage {
 
   async deleteJobPosition(id: string): Promise<void> {
     await db.delete(jobPositions).where(eq(jobPositions.id, id));
+  }
+
+  // Branches
+  async getBranches(): Promise<Branch[]> {
+    return await db.select().from(branches).orderBy(asc(branches.fantasyName));
+  }
+
+  async getBranch(id: string): Promise<Branch | undefined> {
+    const [branch] = await db.select().from(branches).where(eq(branches.id, id));
+    return branch || undefined;
+  }
+
+  async createBranch(branch: InsertBranch): Promise<Branch> {
+    const [newBranch] = await db.insert(branches).values(branch).returning();
+    return newBranch;
+  }
+
+  async updateBranch(id: string, branch: Partial<InsertBranch>): Promise<Branch> {
+    const [updatedBranch] = await db
+      .update(branches)
+      .set(branch)
+      .where(eq(branches.id, id))
+      .returning();
+    return updatedBranch;
+  }
+
+  async deleteBranch(id: string): Promise<void> {
+    await db.delete(branches).where(eq(branches.id, id));
   }
 
   // Employees
