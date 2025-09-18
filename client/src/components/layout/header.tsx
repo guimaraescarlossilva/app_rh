@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Bell, User, ChevronRight } from "lucide-react";
+import { Bell, User, ChevronRight, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
 
 const pageNames = {
   "/": "Dashboard",
+  "/branches": "Filiais",
   "/employees": "Funcionários",
   "/vacations": "Controle de Férias",
   "/terminations": "Rescisões",
@@ -23,6 +24,17 @@ const pageNames = {
 export default function Header() {
   const [location] = useLocation();
   const currentPageName = pageNames[location as keyof typeof pageNames] || "Dashboard";
+  
+  // Obter dados do usuário do localStorage
+  const userData = localStorage.getItem("userData");
+  const user = userData ? JSON.parse(userData) : null;
+
+  const handleLogout = () => {
+    console.log("🔒 [AUTH] Fazendo logout");
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userData");
+    window.location.href = "/login";
+  };
 
   return (
     <header className="bg-card border-b border-border px-4 py-4 sm:px-6">
@@ -52,14 +64,21 @@ export default function Header() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Admin</p>
+                  <p className="text-sm font-medium leading-none">
+                    {user?.name || "Usuário"}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    admin@restaurante.com
+                    {user?.email || "email@exemplo.com"}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem data-testid="logout-button">
+              <DropdownMenuItem 
+                data-testid="logout-button"
+                onClick={handleLogout}
+                className="cursor-pointer"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>

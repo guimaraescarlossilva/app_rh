@@ -16,10 +16,19 @@ import NotFound from "@/pages/not-found";
 
 function Router() {
   const [location] = useLocation();
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   
-  // Redirecionar para login se não estiver logado
-  if (location === "/" && !localStorage.getItem("isLoggedIn")) {
+  // Se não estiver logado e não estiver na página de login, redirecionar
+  if (!isLoggedIn && location !== "/login") {
+    console.log("🔒 [AUTH] Usuário não autenticado, redirecionando para login");
     window.location.href = "/login";
+    return null;
+  }
+
+  // Se estiver logado e estiver na página de login, redirecionar para dashboard
+  if (isLoggedIn && location === "/login") {
+    console.log("✅ [AUTH] Usuário já autenticado, redirecionando para dashboard");
+    window.location.href = "/";
     return null;
   }
 

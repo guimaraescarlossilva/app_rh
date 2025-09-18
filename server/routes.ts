@@ -10,6 +10,45 @@ import {
 import bcrypt from "bcrypt";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      console.log("🔍 [API] POST /api/auth/login - Tentativa de login");
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email e senha são obrigatórios" });
+      }
+
+      console.log("🔍 [API] POST /api/auth/login - Buscando usuário:", email);
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        console.log("❌ [API] POST /api/auth/login - Usuário não encontrado");
+        return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+
+      console.log("🔍 [API] POST /api/auth/login - Verificando senha");
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      
+      if (!isValidPassword) {
+        console.log("❌ [API] POST /api/auth/login - Senha inválida");
+        return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+
+      console.log("✅ [API] POST /api/auth/login - Login bem-sucedido");
+      // Retornar dados do usuário sem a senha
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ 
+        message: "Login realizado com sucesso",
+        user: userWithoutPassword 
+      });
+    } catch (error) {
+      console.error("❌ [API] POST /api/auth/login - Erro:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // Users routes
   app.get("/api/users", async (req, res) => {
     try {
