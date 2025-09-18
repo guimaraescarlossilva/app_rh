@@ -15,7 +15,7 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Restaurantes", href: "/restaurants", icon: Building2 },
+  { name: "Filiais", href: "/branches", icon: Building2 },
   { name: "Funcionários", href: "/employees", icon: Users },
   { name: "Controle de Férias", href: "/vacations", icon: Calendar },
   { name: "Rescisões", href: "/terminations", icon: UserX },

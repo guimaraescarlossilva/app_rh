@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "@/components/layout/layout";
 import Dashboard from "@/pages/dashboard";
-import Restaurants from "@/pages/restaurants";
+import Branches from "@/pages/branches";
 import Employees from "@/pages/employees";
 import Vacations from "@/pages/vacations";
 import Terminations from "@/pages/terminations";
@@ -19,7 +19,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/restaurants" component={Restaurants} />
+        <Route path="/branches" component={Branches} />
         <Route path="/employees" component={Employees} />
         <Route path="/vacations" component={Vacations} />
         <Route path="/terminations" component={Terminations} />

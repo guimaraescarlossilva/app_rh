@@ -12,10 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import type { Restaurant } from "@shared/schema";
+import type { Branch } from "@shared/schema";
 
-interface RestaurantFormProps {
-  restaurant?: Restaurant | null;
+interface BranchFormProps {
+  branch?: Branch | null;
   onSubmit: (data: any) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -27,29 +27,29 @@ const states = [
   "RS", "RO", "RR", "SC", "SP", "SE", "TO"
 ];
 
-export default function RestaurantForm({ 
-  restaurant, 
+export default function BranchForm({ 
+  branch, 
   onSubmit, 
   onCancel, 
   isLoading = false 
-}: RestaurantFormProps) {
+}: BranchFormProps) {
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm();
   const [active, setActive] = useState(true);
 
   useEffect(() => {
-    if (restaurant) {
-      setValue("fantasyName", restaurant.fantasyName);
-      setValue("address", restaurant.address);
-      setValue("phone", restaurant.phone || "");
-      setValue("email", restaurant.email || "");
-      setValue("cnpj", restaurant.cnpj);
-      setValue("city", restaurant.city);
-      setValue("state", restaurant.state);
-      setValue("neighborhood", restaurant.neighborhood);
-      setValue("zipCode", restaurant.zipCode);
-      setActive(restaurant.active);
+    if (branch) {
+      setValue("fantasyName", branch.fantasyName);
+      setValue("address", branch.address);
+      setValue("phone", branch.phone || "");
+      setValue("email", branch.email || "");
+      setValue("cnpj", branch.cnpj);
+      setValue("city", branch.city);
+      setValue("state", branch.state);
+      setValue("neighborhood", branch.neighborhood);
+      setValue("zipCode", branch.zipCode);
+      setActive(branch.active);
     }
-  }, [restaurant, setValue]);
+  }, [branch, setValue]);
 
   const formatCNPJ = (value: string) => {
     const numbers = value.replace(/\D/g, "");
@@ -237,7 +237,7 @@ export default function RestaurantForm({
           checked={active}
           onCheckedChange={setActive}
         />
-        <Label htmlFor="active">Restaurante ativo</Label>
+        <Label htmlFor="active">Filial ativa</Label>
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">
@@ -245,7 +245,7 @@ export default function RestaurantForm({
           Cancelar
         </Button>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Salvando..." : restaurant ? "Atualizar" : "Cadastrar"}
+          {isLoading ? "Salvando..." : branch ? "Atualizar" : "Cadastrar"}
         </Button>
       </div>
     </form>

@@ -22,112 +22,112 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Eye, Edit, Trash2, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Restaurant } from "@shared/schema";
-import RestaurantForm from "@/components/restaurant-form";
+import type { Branch } from "@shared/schema";
+import BranchForm from "@/components/branch-form";
 import { apiRequest } from "@/lib/queryClient";
 
-export default function Restaurants() {
+export default function Branches() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch restaurants
-  const { data: restaurants = [], isLoading } = useQuery({
-    queryKey: ["restaurants"],
-    queryFn: () => apiRequest<Restaurant[]>("/api/restaurants"),
+  // Fetch branches
+  const { data: branches = [], isLoading } = useQuery({
+    queryKey: ["branches"],
+    queryFn: () => apiRequest<Branch[]>("/api/branches"),
   });
 
-  // Create restaurant mutation
+  // Create branch mutation
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/restaurants", {
+    mutationFn: (data: any) => apiRequest("/api/branches", {
       method: "POST",
       body: JSON.stringify(data),
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["restaurants"] });
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
       setIsFormOpen(false);
       toast({
         title: "Sucesso",
-        description: "Restaurante cadastrado com sucesso!",
+        description: "Filial cadastrada com sucesso!",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Erro ao cadastrar restaurante.",
+        description: "Erro ao cadastrar filial.",
         variant: "destructive",
       });
     },
   });
 
-  // Update restaurant mutation
+  // Update branch mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest(`/api/restaurants/${id}`, {
+      apiRequest(`/api/branches/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["restaurants"] });
-      setEditingRestaurant(null);
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      setEditingBranch(null);
       toast({
         title: "Sucesso",
-        description: "Restaurante atualizado com sucesso!",
+        description: "Filial atualizada com sucesso!",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Erro ao atualizar restaurante.",
+        description: "Erro ao atualizar filial.",
         variant: "destructive",
       });
     },
   });
 
-  // Delete restaurant mutation
+  // Delete branch mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest(`/api/restaurants/${id}`, {
+      apiRequest(`/api/branches/${id}`, {
         method: "DELETE",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["restaurants"] });
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
       toast({
         title: "Sucesso",
-        description: "Restaurante removido com sucesso!",
+        description: "Filial removida com sucesso!",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Erro ao remover restaurante.",
+        description: "Erro ao remover filial.",
         variant: "destructive",
       });
     },
   });
 
-  const filteredRestaurants = restaurants.filter((restaurant) =>
-    restaurant.fantasyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    restaurant.cnpj.includes(searchTerm) ||
-    restaurant.city.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredBranches = branches.filter((branch) =>
+    branch.fantasyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    branch.cnpj.includes(searchTerm) ||
+    branch.city.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEdit = (restaurant: Restaurant) => {
-    setEditingRestaurant(restaurant);
+  const handleEdit = (branch: Branch) => {
+    setEditingBranch(branch);
     setIsFormOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja remover este restaurante?")) {
+    if (confirm("Tem certeza que deseja remover esta filial?")) {
       deleteMutation.mutate(id);
     }
   };
 
   const handleFormSubmit = (data: any) => {
-    if (editingRestaurant) {
-      updateMutation.mutate({ id: editingRestaurant.id, data });
+    if (editingBranch) {
+      updateMutation.mutate({ id: editingBranch.id, data });
     } else {
       createMutation.mutate(data);
     }
@@ -135,33 +135,33 @@ export default function Restaurants() {
 
   const handleFormClose = () => {
     setIsFormOpen(false);
-    setEditingRestaurant(null);
+    setEditingBranch(null);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Restaurantes</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Filiais</h1>
           <p className="text-muted-foreground">
-            Gerencie os restaurantes do sistema
+            Gerencie as filiais do sistema
           </p>
         </div>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingRestaurant(null)}>
+            <Button onClick={() => setEditingBranch(null)}>
               <Plus className="mr-2 h-4 w-4" />
-              Novo Restaurante
+              Nova Filial
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingRestaurant ? "Editar Restaurante" : "Novo Restaurante"}
+                {editingBranch ? "Editar Filial" : "Nova Filial"}
               </DialogTitle>
             </DialogHeader>
-            <RestaurantForm
-              restaurant={editingRestaurant}
+            <BranchForm
+              branch={editingBranch}
               onSubmit={handleFormSubmit}
               onCancel={handleFormClose}
               isLoading={createMutation.isPending || updateMutation.isPending}
@@ -172,7 +172,7 @@ export default function Restaurants() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Restaurantes</CardTitle>
+          <CardTitle>Lista de Filiais</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2 mb-4">
@@ -202,17 +202,17 @@ export default function Restaurants() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRestaurants.map((restaurant) => (
-                  <TableRow key={restaurant.id}>
+                {filteredBranches.map((branch) => (
+                  <TableRow key={branch.id}>
                     <TableCell className="font-medium">
-                      {restaurant.fantasyName}
+                      {branch.fantasyName}
                     </TableCell>
-                    <TableCell>{restaurant.cnpj}</TableCell>
-                    <TableCell>{restaurant.city}</TableCell>
-                    <TableCell>{restaurant.state}</TableCell>
+                    <TableCell>{branch.cnpj}</TableCell>
+                    <TableCell>{branch.city}</TableCell>
+                    <TableCell>{branch.state}</TableCell>
                     <TableCell>
-                      <Badge variant={restaurant.active ? "default" : "secondary"}>
-                        {restaurant.active ? "Ativo" : "Inativo"}
+                      <Badge variant={branch.active ? "default" : "secondary"}>
+                        {branch.active ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -220,14 +220,14 @@ export default function Restaurants() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEdit(restaurant)}
+                          onClick={() => handleEdit(branch)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDelete(restaurant.id)}
+                          onClick={() => handleDelete(branch.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -239,9 +239,9 @@ export default function Restaurants() {
             </Table>
           )}
 
-          {filteredRestaurants.length === 0 && !isLoading && (
+          {filteredBranches.length === 0 && !isLoading && (
             <div className="text-center py-8 text-muted-foreground">
-              Nenhum restaurante encontrado.
+              Nenhuma filial encontrada.
             </div>
           )}
         </CardContent>

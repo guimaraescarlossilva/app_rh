@@ -37,8 +37,8 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
     queryKey: ["/api/job-positions"],
   });
 
-  const { data: restaurants = [] } = useQuery({
-    queryKey: ["/api/restaurants"],
+  const { data: branches = [] } = useQuery({
+    queryKey: ["/api/branches"],
   });
 
   const form = useForm<InsertEmployee>({
@@ -49,7 +49,7 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
       email: "",
       phone: "",
       address: "",
-      restaurantId: "",
+      branchId: "",
       positionId: "",
       admissionDate: "",
       baseSalary: "0",
@@ -67,7 +67,7 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
         email: employee.email || "",
         phone: employee.phone || "",
         address: employee.address || "",
-        restaurantId: employee.restaurantId || "",
+        branchId: employee.branchId || "",
         positionId: employee.positionId || "",
         admissionDate: employee.admissionDate,
         baseSalary: employee.baseSalary,
@@ -208,20 +208,20 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
 
           <FormField
             control={form.control}
-            name="restaurantId"
+            name="branchId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Restaurante *</FormLabel>
+                <FormLabel>Filial *</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger data-testid="select-restaurant">
-                      <SelectValue placeholder="Selecione o restaurante" />
+                    <SelectTrigger data-testid="select-branch">
+                      <SelectValue placeholder="Selecione a filial" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {restaurants.map((restaurant: any) => (
-                      <SelectItem key={restaurant.id} value={restaurant.id}>
-                        {restaurant.fantasyName}
+                    {branches.map((branch: any) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.fantasyName}
                       </SelectItem>
                     ))}
                   </SelectContent>

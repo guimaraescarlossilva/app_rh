@@ -22,7 +22,7 @@ export async function runMigrations() {
     const tablesToDrop = [
       'payroll', 'advances', 'terminations', 'vacations', 
       'employees', 'job_positions', 'module_permissions', 
-      'user_restaurants', 'user_groups', 'permission_groups', 'users', 'restaurants'
+      'user_branches', 'user_groups', 'permission_groups', 'users', 'branches'
     ];
     
     for (const table of tablesToDrop) {
@@ -52,9 +52,9 @@ export async function runMigrations() {
     await db.execute(`CREATE TYPE rh_db.termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`);
     await db.execute(`CREATE TYPE rh_db.payment_status AS ENUM ('pendente', 'processado', 'pago');`);
 
-    // Create restaurants table in rh_db schema
+    // Create branches table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS rh_db.restaurants (
+      CREATE TABLE IF NOT EXISTS rh_db.branches (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         fantasy_name TEXT NOT NULL,
         address TEXT NOT NULL,
@@ -103,12 +103,12 @@ export async function runMigrations() {
       );
     `);
 
-    // Create user_restaurants table in rh_db schema
+    // Create user_branches table in rh_db schema
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS rh_db.user_restaurants (
+      CREATE TABLE IF NOT EXISTS rh_db.user_branches (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id VARCHAR NOT NULL REFERENCES rh_db.users(id) ON DELETE CASCADE,
-        restaurant_id VARCHAR NOT NULL REFERENCES rh_db.restaurants(id) ON DELETE CASCADE,
+        branch_id VARCHAR NOT NULL REFERENCES rh_db.branches(id) ON DELETE CASCADE,
         assigned_at TIMESTAMP DEFAULT now() NOT NULL
       );
     `);
@@ -146,7 +146,7 @@ export async function runMigrations() {
         email TEXT,
         phone TEXT,
         address TEXT,
-        restaurant_id VARCHAR NOT NULL REFERENCES rh_db.restaurants(id) ON DELETE CASCADE,
+        branch_id VARCHAR NOT NULL REFERENCES rh_db.branches(id) ON DELETE CASCADE,
         position_id VARCHAR REFERENCES rh_db.job_positions(id),
         admission_date DATE NOT NULL,
         base_salary DECIMAL(10,2) NOT NULL,
