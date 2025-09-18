@@ -9,11 +9,13 @@ import {
   HandCoins, 
   Calculator, 
   Shield,
-  User
+  User,
+  Building2
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Restaurantes", href: "/restaurants", icon: Building2 },
   { name: "Funcionários", href: "/employees", icon: Users },
   { name: "Controle de Férias", href: "/vacations", icon: Calendar },
   { name: "Rescisões", href: "/terminations", icon: UserX },

@@ -37,6 +37,10 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
     queryKey: ["/api/job-positions"],
   });
 
+  const { data: restaurants = [] } = useQuery({
+    queryKey: ["/api/restaurants"],
+  });
+
   const form = useForm<InsertEmployee>({
     resolver: zodResolver(insertEmployeeSchema),
     defaultValues: {
@@ -45,6 +49,7 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
       email: "",
       phone: "",
       address: "",
+      restaurantId: "",
       positionId: "",
       admissionDate: "",
       baseSalary: "0",
@@ -62,6 +67,7 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
         email: employee.email || "",
         phone: employee.phone || "",
         address: employee.address || "",
+        restaurantId: employee.restaurantId || "",
         positionId: employee.positionId || "",
         admissionDate: employee.admissionDate,
         baseSalary: employee.baseSalary,
@@ -195,6 +201,31 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
                 <FormControl>
                   <Input placeholder="Endereço completo" {...field} data-testid="input-address" />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="restaurantId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Restaurante *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger data-testid="select-restaurant">
+                      <SelectValue placeholder="Selecione o restaurante" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {restaurants.map((restaurant: any) => (
+                      <SelectItem key={restaurant.id} value={restaurant.id}>
+                        {restaurant.fantasyName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

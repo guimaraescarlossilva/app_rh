@@ -41,6 +41,7 @@ interface PermissionFormProps {
 
 const userFormSchema = insertUserSchema.extend({
   confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
+  restaurantIds: z.array(z.string()).min(1, "Selecione pelo menos um restaurante"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -54,7 +55,11 @@ export default function PermissionForm({ type, data, onSuccess }: PermissionForm
     queryKey: ["/api/permission-groups"],
   });
 
-  const userForm = useForm<InsertUser & { confirmPassword: string }>({
+  const { data: restaurants = [] } = useQuery({
+    queryKey: ["/api/restaurants"],
+  });
+
+  const userForm = useForm<InsertUser & { confirmPassword: string; restaurantIds: string[] }>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
       name: "",
@@ -62,6 +67,7 @@ export default function PermissionForm({ type, data, onSuccess }: PermissionForm
       password: "",
       confirmPassword: "",
       active: true,
+      restaurantIds: [],
     },
   });
 
@@ -236,6 +242,38 @@ export default function PermissionForm({ type, data, onSuccess }: PermissionForm
                 <FormControl>
                   <Input type="email" placeholder="email@exemplo.com" {...field} data-testid="input-email" />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={userForm.control}
+            name="restaurantIds"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Restaurantes *</FormLabel>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                  {restaurants.map((restaurant: any) => (
+                    <div key={restaurant.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`restaurant-${restaurant.id}`}
+                        checked={field.value?.includes(restaurant.id)}
+                        onCheckedChange={(checked) => {
+                          const currentValue = field.value || [];
+                          if (checked) {
+                            field.onChange([...currentValue, restaurant.id]);
+                          } else {
+                            field.onChange(currentValue.filter((id: string) => id !== restaurant.id));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`restaurant-${restaurant.id}`} className="text-sm">
+                        {restaurant.fantasyName}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
                 <FormMessage />
               </FormItem>
             )}
