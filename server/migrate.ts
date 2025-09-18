@@ -22,7 +22,7 @@ export async function runMigrations() {
     const tablesToDrop = [
       'payroll', 'advances', 'terminations', 'vacations', 
       'employees', 'job_positions', 'module_permissions', 
-      'user_groups', 'permission_groups', 'users'
+      'user_restaurants', 'user_groups', 'permission_groups', 'users', 'restaurants'
     ];
     
     for (const table of tablesToDrop) {
@@ -52,6 +52,25 @@ export async function runMigrations() {
     await db.execute(`CREATE TYPE rh_db.termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`);
     await db.execute(`CREATE TYPE rh_db.payment_status AS ENUM ('pendente', 'processado', 'pago');`);
 
+    // Create restaurants table in rh_db schema
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS rh_db.restaurants (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        fantasy_name TEXT NOT NULL,
+        address TEXT NOT NULL,
+        phone TEXT,
+        email TEXT,
+        cnpj TEXT NOT NULL UNIQUE,
+        city TEXT NOT NULL,
+        state TEXT NOT NULL,
+        neighborhood TEXT NOT NULL,
+        zip_code TEXT NOT NULL,
+        active BOOLEAN DEFAULT true NOT NULL,
+        created_at TIMESTAMP DEFAULT now() NOT NULL,
+        updated_at TIMESTAMP DEFAULT now() NOT NULL
+      );
+    `);
+
     // Create users table in rh_db schema
     await db.execute(`
       CREATE TABLE IF NOT EXISTS rh_db.users (
@@ -80,6 +99,16 @@ export async function runMigrations() {
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id VARCHAR NOT NULL REFERENCES rh_db.users(id) ON DELETE CASCADE,
         group_id VARCHAR NOT NULL REFERENCES rh_db.permission_groups(id) ON DELETE CASCADE,
+        assigned_at TIMESTAMP DEFAULT now() NOT NULL
+      );
+    `);
+
+    // Create user_restaurants table in rh_db schema
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS rh_db.user_restaurants (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL REFERENCES rh_db.users(id) ON DELETE CASCADE,
+        restaurant_id VARCHAR NOT NULL REFERENCES rh_db.restaurants(id) ON DELETE CASCADE,
         assigned_at TIMESTAMP DEFAULT now() NOT NULL
       );
     `);
@@ -117,6 +146,7 @@ export async function runMigrations() {
         email TEXT,
         phone TEXT,
         address TEXT,
+        restaurant_id VARCHAR NOT NULL REFERENCES rh_db.restaurants(id) ON DELETE CASCADE,
         position_id VARCHAR REFERENCES rh_db.job_positions(id),
         admission_date DATE NOT NULL,
         base_salary DECIMAL(10,2) NOT NULL,

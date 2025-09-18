@@ -9,6 +9,23 @@ export const vacationStatusEnum = pgEnum("vacation_status", ["pendente", "aprova
 export const terminationReasonEnum = pgEnum("termination_reason", ["demissao", "rescisao", "aposentadoria", "abandono", "falecimento"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pendente", "processado", "pago"]);
 
+// Restaurants table
+export const restaurants = pgTable("restaurants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fantasyName: text("fantasy_name").notNull(),
+  address: text("address").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  cnpj: text("cnpj").notNull().unique(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  neighborhood: text("neighborhood").notNull(),
+  zipCode: text("zip_code").notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+});
+
 // Users table for system access
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -32,6 +49,14 @@ export const userGroups = pgTable("user_groups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   groupId: varchar("group_id").notNull().references(() => permissionGroups.id, { onDelete: "cascade" }),
+  assignedAt: timestamp("assigned_at").default(sql`now()`).notNull(),
+});
+
+// User restaurant assignments
+export const userRestaurants = pgTable("user_restaurants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  restaurantId: varchar("restaurant_id").notNull().references(() => restaurants.id, { onDelete: "cascade" }),
   assignedAt: timestamp("assigned_at").default(sql`now()`).notNull(),
 });
 
@@ -63,6 +88,7 @@ export const employees = pgTable("employees", {
   email: text("email"),
   phone: text("phone"),
   address: text("address"),
+  restaurantId: varchar("restaurant_id").notNull().references(() => restaurants.id, { onDelete: "cascade" }),
   positionId: varchar("position_id").references(() => jobPositions.id),
   admissionDate: date("admission_date").notNull(),
   baseSalary: decimal("base_salary", { precision: 10, scale: 2 }).notNull(),
@@ -157,8 +183,14 @@ export const payroll = pgTable("payroll", {
 });
 
 // Relations
+export const restaurantsRelations = relations(restaurants, ({ many }) => ({
+  employees: many(employees),
+  userRestaurants: many(userRestaurants),
+}));
+
 export const usersRelations = relations(users, ({ many }) => ({
   userGroups: many(userGroups),
+  userRestaurants: many(userRestaurants),
 }));
 
 export const permissionGroupsRelations = relations(permissionGroups, ({ many }) => ({
@@ -177,6 +209,17 @@ export const userGroupsRelations = relations(userGroups, ({ one }) => ({
   }),
 }));
 
+export const userRestaurantsRelations = relations(userRestaurants, ({ one }) => ({
+  user: one(users, {
+    fields: [userRestaurants.userId],
+    references: [users.id],
+  }),
+  restaurant: one(restaurants, {
+    fields: [userRestaurants.restaurantId],
+    references: [restaurants.id],
+  }),
+}));
+
 export const modulePermissionsRelations = relations(modulePermissions, ({ one }) => ({
   group: one(permissionGroups, {
     fields: [modulePermissions.groupId],
@@ -189,6 +232,10 @@ export const jobPositionsRelations = relations(jobPositions, ({ many }) => ({
 }));
 
 export const employeesRelations = relations(employees, ({ one, many }) => ({
+  restaurant: one(restaurants, {
+    fields: [employees.restaurantId],
+    references: [restaurants.id],
+  }),
   position: one(jobPositions, {
     fields: [employees.positionId],
     references: [jobPositions.id],
@@ -232,6 +279,12 @@ export const payrollRelations = relations(payroll, ({ one }) => ({
 }));
 
 // Insert schemas
+export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -243,6 +296,11 @@ export const insertPermissionGroupSchema = createInsertSchema(permissionGroups).
 });
 
 export const insertUserGroupSchema = createInsertSchema(userGroups).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertUserRestaurantSchema = createInsertSchema(userRestaurants).omit({
   id: true,
   assignedAt: true,
 });
@@ -285,12 +343,16 @@ export const insertPayrollSchema = createInsertSchema(payroll).omit({
 });
 
 // Types
+export type Restaurant = typeof restaurants.$inferSelect;
+export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type PermissionGroup = typeof permissionGroups.$inferSelect;
 export type InsertPermissionGroup = z.infer<typeof insertPermissionGroupSchema>;
 export type UserGroup = typeof userGroups.$inferSelect;
 export type InsertUserGroup = z.infer<typeof insertUserGroupSchema>;
+export type UserRestaurant = typeof userRestaurants.$inferSelect;
+export type InsertUserRestaurant = z.infer<typeof insertUserRestaurantSchema>;
 export type ModulePermission = typeof modulePermissions.$inferSelect;
 export type InsertModulePermission = z.infer<typeof insertModulePermissionSchema>;
 export type JobPosition = typeof jobPositions.$inferSelect;
