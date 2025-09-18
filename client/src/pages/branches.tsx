@@ -39,7 +39,7 @@ export default function Branches() {
     queryFn: async () => {
       console.log("🔍 [FRONTEND] Buscando filiais...");
       try {
-        const response = await apiRequest<Branch[]>("/api/branches");
+        const response = await apiRequest("GET", "/api/branches");
         const data = await response.json();
         console.log("✅ [FRONTEND] Filiais recebidas:", data);
         return data;
@@ -55,10 +55,7 @@ export default function Branches() {
 
   // Create branch mutation
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/branches", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+    mutationFn: (data: any) => apiRequest("POST", "/api/branches", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["branches"] });
       setIsFormOpen(false);
@@ -79,10 +76,7 @@ export default function Branches() {
   // Update branch mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest(`/api/branches/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("PUT", `/api/branches/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["branches"] });
       setEditingBranch(null);
@@ -103,9 +97,7 @@ export default function Branches() {
   // Delete branch mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest(`/api/branches/${id}`, {
-        method: "DELETE",
-      }),
+      apiRequest("DELETE", `/api/branches/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["branches"] });
       toast({
