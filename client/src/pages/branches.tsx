@@ -34,10 +34,24 @@ export default function Branches() {
   const queryClient = useQueryClient();
 
   // Fetch branches
-  const { data: branches = [], isLoading } = useQuery({
+  const { data: branches = [], isLoading, error } = useQuery({
     queryKey: ["branches"],
-    queryFn: () => apiRequest<Branch[]>("/api/branches"),
+    queryFn: async () => {
+      console.log("🔍 [FRONTEND] Buscando filiais...");
+      try {
+        const response = await apiRequest<Branch[]>("/api/branches");
+        const data = await response.json();
+        console.log("✅ [FRONTEND] Filiais recebidas:", data);
+        return data;
+      } catch (error) {
+        console.error("❌ [FRONTEND] Erro ao buscar filiais:", error);
+        throw error;
+      }
+    },
   });
+
+  // Log dos dados recebidos
+  console.log("📊 [FRONTEND] Estado da query:", { branches, isLoading, error });
 
   // Create branch mutation
   const createMutation = useMutation({

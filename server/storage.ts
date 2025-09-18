@@ -252,7 +252,17 @@ export class DatabaseStorage implements IStorage {
 
   // Branches
   async getBranches(): Promise<Branch[]> {
-    return await db.select().from(branches).orderBy(asc(branches.fantasyName));
+    try {
+      console.log("🔍 [STORAGE] getBranches - Iniciando consulta no banco");
+      const result = await db.select().from(branches).orderBy(asc(branches.fantasyName));
+      console.log("✅ [STORAGE] getBranches - Consulta executada com sucesso");
+      console.log("📊 [STORAGE] getBranches - Registros encontrados:", result.length);
+      console.log("📋 [STORAGE] getBranches - Dados:", JSON.stringify(result, null, 2));
+      return result;
+    } catch (error) {
+      console.error("❌ [STORAGE] getBranches - Erro na consulta:", error);
+      throw error;
+    }
   }
 
   async getBranch(id: string): Promise<Branch | undefined> {

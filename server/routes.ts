@@ -205,9 +205,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Branches routes
   app.get("/api/branches", async (req, res) => {
     try {
+      console.log("🔍 [API] GET /api/branches - Iniciando busca de filiais");
       const branches = await storage.getBranches();
+      console.log("✅ [API] GET /api/branches - Filiais encontradas:", branches.length);
+      console.log("📋 [API] GET /api/branches - Dados:", JSON.stringify(branches, null, 2));
       res.json(branches);
     } catch (error) {
+      console.error("❌ [API] GET /api/branches - Erro:", error);
       res.status(500).json({ message: "Failed to fetch branches" });
     }
   });

@@ -12,6 +12,14 @@ app.use((req, res, next) => {
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
+  // Log da requisição recebida
+  if (path.startsWith("/api")) {
+    console.log(`🔍 [SERVER] ${req.method} ${path} - Requisição recebida`);
+    if (req.body && Object.keys(req.body).length > 0) {
+      console.log(`📤 [SERVER] ${req.method} ${path} - Body:`, JSON.stringify(req.body, null, 2));
+    }
+  }
+
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
@@ -30,6 +38,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
+      console.log(`📊 [SERVER] ${logLine}`);
       log(logLine);
     }
   });
@@ -38,15 +47,21 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  console.log("🚀 [SERVER] Iniciando servidor...");
+  
   // Run database migrations on startup
   try {
+    console.log("🔄 [SERVER] Executando migrações do banco...");
     await runMigrations();
+    console.log("✅ [SERVER] Migrações concluídas com sucesso");
   } catch (error) {
-    console.error('Failed to run migrations:', error);
+    console.error('❌ [SERVER] Falha nas migrações:', error);
     process.exit(1);
   }
 
+  console.log("🛣️ [SERVER] Registrando rotas...");
   const server = await registerRoutes(app);
+  console.log("✅ [SERVER] Rotas registradas com sucesso");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -70,11 +85,15 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  console.log(`🌐 [SERVER] Configurando servidor na porta ${port}...`);
+  
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
+    console.log(`🎉 [SERVER] Servidor rodando na porta ${port}`);
+    console.log(`🔗 [SERVER] URL: http://localhost:${port}`);
     log(`serving on port ${port}`);
   });
 })();

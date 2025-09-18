@@ -12,12 +12,16 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  console.log(`🔍 [API_REQUEST] ${method} ${url}`, data ? { data } : '');
+  
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
   });
 
+  console.log(`📊 [API_REQUEST] ${method} ${url} - Status: ${res.status} ${res.statusText}`);
+  
   await throwIfResNotOk(res);
   return res;
 }
@@ -28,14 +32,21 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string);
+    const url = queryKey.join("/") as string;
+    console.log(`🔍 [QUERY_FN] GET ${url}`);
+    
+    const res = await fetch(url);
+    console.log(`📊 [QUERY_FN] GET ${url} - Status: ${res.status} ${res.statusText}`);
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      console.log(`⚠️ [QUERY_FN] GET ${url} - 401 Unauthorized, retornando null`);
       return null;
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    const data = await res.json();
+    console.log(`✅ [QUERY_FN] GET ${url} - Dados recebidos:`, data);
+    return data;
   };
 
 export const queryClient = new QueryClient({
