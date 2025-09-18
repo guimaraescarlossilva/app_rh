@@ -15,68 +15,20 @@ import Permissions from "@/pages/permissions";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const [location] = useLocation();
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  
-  // Se não estiver logado e não estiver na página de login, redirecionar
-  if (!isLoggedIn && location !== "/login") {
-    console.log("🔒 [AUTH] Usuário não autenticado, redirecionando para login");
-    window.location.href = "/login";
-    return null;
-  }
-
-  // Se estiver logado e estiver na página de login, redirecionar para dashboard
-  if (isLoggedIn && location === "/login") {
-    console.log("✅ [AUTH] Usuário já autenticado, redirecionando para dashboard");
-    window.location.href = "/";
-    return null;
-  }
-
   return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/" component={() => (
-        <Layout>
-          <Dashboard />
-        </Layout>
-      )} />
-      <Route path="/branches" component={() => (
-        <Layout>
-          <Branches />
-        </Layout>
-      )} />
-      <Route path="/employees" component={() => (
-        <Layout>
-          <Employees />
-        </Layout>
-      )} />
-      <Route path="/vacations" component={() => (
-        <Layout>
-          <Vacations />
-        </Layout>
-      )} />
-      <Route path="/terminations" component={() => (
-        <Layout>
-          <Terminations />
-        </Layout>
-      )} />
-      <Route path="/advances" component={() => (
-        <Layout>
-          <Advances />
-        </Layout>
-      )} />
-      <Route path="/payroll" component={() => (
-        <Layout>
-          <Payroll />
-        </Layout>
-      )} />
-      <Route path="/permissions" component={() => (
-        <Layout>
-          <Permissions />
-        </Layout>
-      )} />
-      <Route component={NotFound} />
-    </Switch>
+    <Layout>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/branches" component={Branches} />
+        <Route path="/employees" component={Employees} />
+        <Route path="/vacations" component={Vacations} />
+        <Route path="/terminations" component={Terminations} />
+        <Route path="/advances" component={Advances} />
+        <Route path="/payroll" component={Payroll} />
+        <Route path="/permissions" component={Permissions} />
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 }
 
