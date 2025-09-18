@@ -12,7 +12,10 @@ export async function runMigrations() {
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
   });
-  const db = drizzle(pool, { schema });
+  const db = drizzle(pool, { 
+    schema,
+    logger: true  // Adicionar logs para debug
+  });
 
   try {
     console.log('🔄 Running database migrations...');
