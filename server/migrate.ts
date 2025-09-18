@@ -8,7 +8,10 @@ export async function runMigrations() {
     throw new Error("DATABASE_URL must be set");
   }
 
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({ 
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
   const db = drizzle(pool, { schema });
 
   try {
