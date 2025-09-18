@@ -18,11 +18,30 @@ export async function runMigrations() {
     console.log('🔄 Running database migrations...');
     
     // Create all tables using the schema
-    // Create enums
-    await db.execute(`CREATE TYPE IF NOT EXISTS employee_status AS ENUM ('ativo', 'inativo', 'afastado');`);
-    await db.execute(`CREATE TYPE IF NOT EXISTS vacation_status AS ENUM ('pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado');`);
-    await db.execute(`CREATE TYPE IF NOT EXISTS termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`);
-    await db.execute(`CREATE TYPE IF NOT EXISTS payment_status AS ENUM ('pendente', 'processado', 'pago');`);
+    // Create enums (with error handling)
+    try {
+      await db.execute(`CREATE TYPE employee_status AS ENUM ('ativo', 'inativo', 'afastado');`);
+    } catch (e) {
+      console.log('employee_status enum already exists');
+    }
+    
+    try {
+      await db.execute(`CREATE TYPE vacation_status AS ENUM ('pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado');`);
+    } catch (e) {
+      console.log('vacation_status enum already exists');
+    }
+    
+    try {
+      await db.execute(`CREATE TYPE termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`);
+    } catch (e) {
+      console.log('termination_reason enum already exists');
+    }
+    
+    try {
+      await db.execute(`CREATE TYPE payment_status AS ENUM ('pendente', 'processado', 'pago');`);
+    } catch (e) {
+      console.log('payment_status enum already exists');
+    }
 
     // Create users table
     await db.execute(`
