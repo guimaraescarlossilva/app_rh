@@ -89,10 +89,10 @@ app.use((req, res, next) => {
   
   server.listen({
     port,
-    host: "localhost",
+    host: "0.0.0.0",
   }, () => {
     console.log(`🎉 [SERVER] Servidor rodando na porta ${port}`);
-    console.log(`🔗 [SERVER] URL: http://localhost:${port}`);
+    console.log(`🔗 [SERVER] URL: http://0.0.0.0:${port}`);
     log(`serving on port ${port}`);
   });
 })();
