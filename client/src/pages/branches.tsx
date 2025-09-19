@@ -35,7 +35,7 @@ export default function Branches() {
 
   // Fetch branches
   const { data: branches = [], isLoading, error } = useQuery({
-    queryKey: ["branches"],
+    queryKey: ["/api/branches"],
     queryFn: async () => {
       console.log("🔍 [FRONTEND] Buscando filiais...");
       try {
@@ -52,12 +52,16 @@ export default function Branches() {
 
   // Log dos dados recebidos
   console.log("📊 [FRONTEND] Estado da query:", { branches, isLoading, error });
+  
+  // Debug: Log quando os dados mudam
+  console.log("🔍 [FRONTEND] Branches recebidas:", branches);
+  console.log("🔍 [FRONTEND] Filtered branches:", filteredBranches);
 
   // Create branch mutation
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/branches", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/branches"] });
       setIsFormOpen(false);
       toast({
         title: "Sucesso",
@@ -78,7 +82,7 @@ export default function Branches() {
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       apiRequest("PUT", `/api/branches/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/branches"] });
       setEditingBranch(null);
       toast({
         title: "Sucesso",
@@ -99,7 +103,7 @@ export default function Branches() {
     mutationFn: (id: string) =>
       apiRequest("DELETE", `/api/branches/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/branches"] });
       toast({
         title: "Sucesso",
         description: "Filial removida com sucesso!",
@@ -195,6 +199,10 @@ export default function Branches() {
 
           {isLoading ? (
             <div className="text-center py-8">Carregando...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">
+              Erro ao carregar filiais: {error.message}
+            </div>
           ) : (
             <Table>
               <TableHeader>
