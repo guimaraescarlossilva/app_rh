@@ -6,16 +6,34 @@ export async function runMigrations() {
   try {
     // Create enums (only if they don't exist)
     console.log('📝 Creating enums in rh_db schema...');
-    const enumQueries = [
-      `CREATE TYPE IF NOT EXISTS rh_db.employee_status AS ENUM ('ativo', 'inativo', 'afastado');`,
-      `CREATE TYPE IF NOT EXISTS rh_db.vacation_status AS ENUM ('pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado');`,
-      `CREATE TYPE IF NOT EXISTS rh_db.termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`,
-      `CREATE TYPE IF NOT EXISTS rh_db.payment_status AS ENUM ('pendente', 'processado', 'pago');`
+    
+    const enumTypes = [
+      { name: 'employee_status', values: ['ativo', 'inativo', 'afastado'] },
+      { name: 'vacation_status', values: ['pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado'] },
+      { name: 'termination_reason', values: ['demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento'] },
+      { name: 'payment_status', values: ['pendente', 'processado', 'pago'] }
     ];
 
-    for (const query of enumQueries) {
-      console.log(`Query: ${query}`);
-      await pool.query(query);
+    for (const enumType of enumTypes) {
+      // Check if enum type already exists
+      const checkQuery = `
+        SELECT 1 FROM pg_type 
+        WHERE typname = $1 AND typnamespace = (
+          SELECT oid FROM pg_namespace WHERE nspname = 'rh_db'
+        )
+      `;
+      
+      const result = await pool.query(checkQuery, [enumType.name]);
+      
+      if (result.rows.length === 0) {
+        // Create enum if it doesn't exist
+        const createQuery = `CREATE TYPE rh_db.${enumType.name} AS ENUM (${enumType.values.map(v => `'${v}'`).join(', ')});`;
+        console.log(`Query: ${createQuery}`);
+        await pool.query(createQuery);
+        console.log(`Created enum: rh_db.${enumType.name}`);
+      } else {
+        console.log(`Enum already exists: rh_db.${enumType.name}`);
+      }
     }
 
     // Create tables
