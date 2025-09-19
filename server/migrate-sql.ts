@@ -4,40 +4,13 @@ export async function runMigrations() {
   console.log('🔄 Running database migrations...');
   
   try {
-    // Drop existing tables in rh_db schema only (in correct order due to foreign keys)
-    console.log('🧹 Cleaning existing tables in rh_db schema...');
-    const tablesToDrop = [
-      'payroll', 'advances', 'terminations', 'vacations', 
-      'employees', 'job_positions', 'module_permissions', 
-      'user_branches', 'user_groups', 'permission_groups', 'users', 'branches'
-    ];
-
-    for (const table of tablesToDrop) {
-      const query = `DROP TABLE IF EXISTS rh_db.${table} CASCADE;`;
-      console.log(`Query: ${query}`);
-      await pool.query(query);
-      console.log(`Dropped table: rh_db.${table}`);
-    }
-
-    // Drop existing enums
-    const enumsToDrop = [
-      'payment_status', 'termination_reason', 'vacation_status', 'employee_status'
-    ];
-
-    for (const enumType of enumsToDrop) {
-      const query = `DROP TYPE IF EXISTS rh_db.${enumType} CASCADE;`;
-      console.log(`Query: ${query}`);
-      await pool.query(query);
-      console.log(`Dropped type: rh_db.${enumType}`);
-    }
-
-    // Create enums
+    // Create enums (only if they don't exist)
     console.log('📝 Creating enums in rh_db schema...');
     const enumQueries = [
-      `CREATE TYPE rh_db.employee_status AS ENUM ('ativo', 'inativo', 'afastado');`,
-      `CREATE TYPE rh_db.vacation_status AS ENUM ('pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado');`,
-      `CREATE TYPE rh_db.termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`,
-      `CREATE TYPE rh_db.payment_status AS ENUM ('pendente', 'processado', 'pago');`
+      `CREATE TYPE IF NOT EXISTS rh_db.employee_status AS ENUM ('ativo', 'inativo', 'afastado');`,
+      `CREATE TYPE IF NOT EXISTS rh_db.vacation_status AS ENUM ('pendente', 'aprovado', 'em_gozo', 'concluido', 'rejeitado');`,
+      `CREATE TYPE IF NOT EXISTS rh_db.termination_reason AS ENUM ('demissao', 'rescisao', 'aposentadoria', 'abandono', 'falecimento');`,
+      `CREATE TYPE IF NOT EXISTS rh_db.payment_status AS ENUM ('pendente', 'processado', 'pago');`
     ];
 
     for (const query of enumQueries) {
