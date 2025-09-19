@@ -242,14 +242,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Branches routes
   app.get("/api/branches", async (req, res) => {
+    const startTime = Date.now();
+    const reqId = Math.random().toString(36).substr(2, 9);
+    
     try {
-      console.log("🔍 [API] GET /api/branches - Iniciando busca de filiais");
-      const branches = await storage.getBranches();
-      console.log("✅ [API] GET /api/branches - Filiais encontradas:", branches.length);
-      console.log("📋 [API] GET /api/branches - Dados:", JSON.stringify(branches, null, 2));
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+      const search = req.query.search as string;
+      
+      const branches = await storage.getBranches({ limit, offset, search });
+      
+      res.set({
+        'X-Total-Count': branches.length.toString(),
+        'X-Request-ID': reqId,
+        'X-Response-Time': `${Date.now() - startTime}ms`
+      });
+      
       res.json(branches);
     } catch (error) {
-      console.error("❌ [API] GET /api/branches - Erro:", error);
+      console.error(`[${reqId}] GET /api/branches error:`, error);
       res.status(500).json({ message: "Failed to fetch branches" });
     }
   });
@@ -298,10 +309,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Employees routes
   app.get("/api/employees", async (req, res) => {
+    const startTime = Date.now();
+    const reqId = Math.random().toString(36).substr(2, 9);
+    
     try {
-      const employees = await storage.getEmployees();
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+      const search = req.query.search as string;
+      
+      const employees = await storage.getEmployees({ limit, offset, search });
+      
+      res.set({
+        'X-Total-Count': employees.length.toString(),
+        'X-Request-ID': reqId,
+        'X-Response-Time': `${Date.now() - startTime}ms`
+      });
+      
       res.json(employees);
     } catch (error) {
+      console.error(`[${reqId}] GET /api/employees error:`, error);
       res.status(500).json({ message: "Failed to fetch employees" });
     }
   });

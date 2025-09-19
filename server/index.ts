@@ -2,10 +2,35 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./migrate-sql";
+import { randomUUID } from 'crypto';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Structured logging middleware
+app.use((req, res, next) => {
+  const reqId = req.headers['x-request-id'] as string || randomUUID();
+  const startTime = Date.now();
+  
+  req.reqId = reqId;
+  res.set('X-Request-ID', reqId);
+  
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    console.log(JSON.stringify({
+      reqId,
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    }));
+  });
+  
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();

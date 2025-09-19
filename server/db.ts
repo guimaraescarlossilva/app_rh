@@ -1,12 +1,32 @@
-import pkg from 'pg';
+import "dotenv/config";
+import pkg from "pg";
+
 const { Pool } = pkg;
 
-// Database configuration for Render PostgreSQL
-export const pool = new Pool({ 
-  host: 'dpg-d0cdphs9c44c73ds27tg-a.oregon-postgres.render.com',
-  port: 5432,
-  database: 'nativas_db',
-  user: 'nativas_db_user',
-  password: 'Hu01lD4toCQHs00i0nJZZNyfr0iJL8Jl',
-  ssl: { rejectUnauthorized: false }
+const toInt = (value: string | undefined, fallback: number) => {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL não configurado");
+}
+
+export const pool = new Pool({
+  connectionString,
+  max: toInt(process.env.PG_POOL_MAX, 20),
+  idleTimeoutMillis: toInt(process.env.PG_IDLE_TIMEOUT_MS, 30_000),
+  connectionTimeoutMillis: toInt(process.env.PG_CONNECTION_TIMEOUT_MS, 5_000),
+  ssl: { rejectUnauthorized: false },
 });
+
+export async function withConnection<T>(fn: (client: pkg.PoolClient) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    return await fn(client);
+  } finally {
+    client.release();
+  }
+}
