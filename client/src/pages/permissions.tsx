@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, User, Shield, Users, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { User as SystemUser, PermissionGroup } from "@shared/schema";
+import type { User as SystemUser, PermissionGroup } from "@shared/types";
 import PermissionForm from "@/components/permission-form";
 import { apiRequest } from "@/lib/queryClient";
 

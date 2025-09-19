@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Eye, Edit, Trash2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Employee } from "@shared/schema";
+import type { Employee } from "@shared/types";
 import EmployeeForm from "@/components/employee-form";
 import { apiRequest } from "@/lib/queryClient";
 

@@ -29,7 +29,7 @@ import {
   type InsertUser, 
   type PermissionGroup,
   type InsertPermissionGroup
-} from "@shared/schema";
+} from "@shared/types";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
 

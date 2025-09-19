@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, User, HandCoins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Advance, Employee } from "@shared/schema";
+import type { Advance, Employee } from "@shared/types";
 import AdvanceForm from "@/components/advance-form";
 import { apiRequest } from "@/lib/queryClient";
 

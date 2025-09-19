@@ -20,7 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar, Check, X, Eye, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Vacation, Employee } from "@shared/schema";
+import type { Vacation, Employee } from "@shared/types";
 import VacationForm from "@/components/vacation-form";
 import { apiRequest } from "@/lib/queryClient";
 

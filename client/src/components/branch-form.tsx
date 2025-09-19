@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import type { Branch } from "@shared/schema";
+import type { Branch } from "@shared/types";
 
 interface BranchFormProps {
   branch?: Branch | null;

@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { insertAdvanceSchema, type Advance, type InsertAdvance, type Employee } from "@shared/schema";
+import { insertAdvanceSchema, type Advance, type InsertAdvance, type Employee } from "@shared/types";
 import { apiRequest } from "@/lib/queryClient";
 
 interface AdvanceFormProps {

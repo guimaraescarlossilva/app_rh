@@ -1,12 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import {
-  insertUserSchema, insertPermissionGroupSchema, insertUserGroupSchema,
-  insertModulePermissionSchema, insertJobPositionSchema, insertEmployeeSchema,
-  insertVacationSchema, insertTerminationSchema, insertAdvanceSchema,
-  insertPayrollSchema, insertBranchSchema
-} from "@shared/schema";
+import { storage } from "./storage-sql";
+// Schema validation removed - using direct SQL storage
 import bcrypt from "bcrypt";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -273,15 +268,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/branches", async (req, res) => {
     try {
-      console.log("🔍 [API] POST /api/branches - Validando dados:", req.body);
-      const validatedData = insertBranchSchema.parse(req.body);
-      console.log("✅ [API] POST /api/branches - Dados validados:", validatedData);
-      const branch = await storage.createBranch(validatedData);
+      console.log("🔍 [API] POST /api/branches - Criando filial:", req.body);
+      const branch = await storage.createBranch(req.body);
       console.log("✅ [API] POST /api/branches - Filial criada:", branch);
       res.status(201).json(branch);
     } catch (error) {
-      console.error("❌ [API] POST /api/branches - Erro de validação:", error);
-      res.status(400).json({ message: "Invalid branch data" });
+      console.error("❌ [API] POST /api/branches - Erro:", error);
+      res.status(500).json({ message: "Failed to create branch" });
     }
   });
 

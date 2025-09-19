@@ -21,7 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { insertEmployeeSchema, type Employee, type InsertEmployee } from "@shared/schema";
+import { insertEmployeeSchema, type Employee, type InsertEmployee } from "@shared/types";
 import { apiRequest } from "@/lib/queryClient";
 
 interface EmployeeFormProps {

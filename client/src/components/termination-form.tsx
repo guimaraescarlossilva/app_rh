@@ -22,7 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { insertTerminationSchema, type Termination, type InsertTermination, type Employee } from "@shared/schema";
+import { insertTerminationSchema, type Termination, type InsertTermination, type Employee } from "@shared/types";
 import { apiRequest } from "@/lib/queryClient";
 
 interface TerminationFormProps {

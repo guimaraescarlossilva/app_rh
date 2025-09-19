@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Eye, Edit, Trash2, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Branch } from "@shared/schema";
+import type { Branch } from "@shared/types";
 import BranchForm from "@/components/branch-form";
 import { apiRequest } from "@/lib/queryClient";
 

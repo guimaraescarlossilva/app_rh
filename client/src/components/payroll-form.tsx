@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { insertPayrollSchema, type Payroll, type InsertPayroll, type Employee } from "@shared/schema";
+import { insertPayrollSchema, type Payroll, type InsertPayroll, type Employee } from "@shared/types";
 import { apiRequest } from "@/lib/queryClient";
 
 interface PayrollFormProps {
