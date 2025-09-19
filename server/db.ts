@@ -3,14 +3,14 @@ const { Pool } = pkg;
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+// Database configuration for Render PostgreSQL
 
 export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
+  host: 'dpg-d0cdphs9c44c73ds27tg-a.oregon-postgres.render.com',
+  port: 5432,
+  database: 'nativas_db',
+  user: 'nativas_db_user',
+  password: 'Hu01lD4toCQHs00i0nJZZNyfr0iJL8Jl',
   ssl: { rejectUnauthorized: false }
 });
 export const db = drizzle(pool, { 

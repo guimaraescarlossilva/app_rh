@@ -4,12 +4,14 @@ const { Pool } = pkg;
 import * as schema from "@shared/schema";
 
 export async function runMigrations() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL must be set");
-  }
+  // Database configuration for Render PostgreSQL
 
   const pool = new Pool({ 
-    connectionString: process.env.DATABASE_URL,
+    host: 'dpg-d0cdphs9c44c73ds27tg-a.oregon-postgres.render.com',
+    port: 5432,
+    database: 'nativas_db',
+    user: 'nativas_db_user',
+    password: 'Hu01lD4toCQHs00i0nJZZNyfr0iJL8Jl',
     ssl: { rejectUnauthorized: false }
   });
   const db = drizzle(pool, { 
