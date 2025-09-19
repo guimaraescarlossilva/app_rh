@@ -44,6 +44,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Permissions routes
+  app.get("/api/permissions/groups", async (req, res) => {
+    const startTime = Date.now();
+    const reqId = Math.random().toString(36).substr(2, 9);
+    
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+      const search = req.query.search as string;
+      
+      const groups = await storage.getPermissionGroups({ limit, offset, search });
+      
+      res.set({
+        'X-Total-Count': groups.length.toString(),
+        'X-Request-ID': reqId,
+        'X-Response-Time': `${Date.now() - startTime}ms`
+      });
+      
+      res.json(groups);
+    } catch (error) {
+      console.error(`[${reqId}] GET /api/permissions/groups error:`, error);
+      res.status(500).json({ 
+        message: "Failed to fetch permission groups",
+        error: error instanceof Error ? error.message : "Unknown error",
+        requestId: reqId
+      });
+    }
+  });
+
+  app.get("/api/permissions/catalog", async (req, res) => {
+    const startTime = Date.now();
+    const reqId = Math.random().toString(36).substr(2, 9);
+    
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+      const search = req.query.search as string;
+      
+      const permissions = await storage.getModulePermissionsCatalog({ limit, offset, search });
+      
+      res.set({
+        'X-Total-Count': permissions.length.toString(),
+        'X-Request-ID': reqId,
+        'X-Response-Time': `${Date.now() - startTime}ms`
+      });
+      
+      res.json(permissions);
+    } catch (error) {
+      console.error(`[${reqId}] GET /api/permissions/catalog error:`, error);
+      res.status(500).json({ 
+        message: "Failed to fetch permissions catalog",
+        error: error instanceof Error ? error.message : "Unknown error",
+        requestId: reqId
+      });
+    }
+  });
+
   // Users routes
   app.get("/api/users", async (req, res) => {
     const startTime = Date.now();

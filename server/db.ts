@@ -30,3 +30,16 @@ export async function withConnection<T>(fn: (client: pkg.PoolClient) => Promise<
     client.release();
   }
 }
+
+// Health check function
+export async function checkConnection(): Promise<boolean> {
+  try {
+    await withConnection(async (client) => {
+      await client.query('SELECT 1');
+    });
+    return true;
+  } catch (error) {
+    console.error('Database connection check failed:', error);
+    return false;
+  }
+}

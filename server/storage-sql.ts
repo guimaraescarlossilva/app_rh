@@ -256,7 +256,7 @@ export class SQLStorage implements IStorage {
     const params: unknown[] = [];
 
     if (search) {
-      clauses.push(`(name ILIKE $${params.length + 1} OR email ILIKE $${params.length + 1})`);
+      clauses.push(`(u.name ILIKE $${params.length + 1} OR u.email ILIKE $${params.length + 1})`);
       params.push(`%${search}%`);
     }
 
@@ -265,17 +265,29 @@ export class SQLStorage implements IStorage {
 
     const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
     const query = `
-      SELECT id, name, email, password, active, created_at
-      FROM rh_db.users
+      SELECT u.id, u.name, u.email, u.password, u.active, u.created_at,
+             STRING_AGG(DISTINCT pg.name, ', ') as group_names,
+             STRING_AGG(DISTINCT b.fantasy_name, ', ') as branch_names
+      FROM rh_db.users u
+      LEFT JOIN rh_db.user_groups ug ON u.id = ug.user_id
+      LEFT JOIN rh_db.permission_groups pg ON ug.group_id = pg.id
+      LEFT JOIN rh_db.user_branches ub ON u.id = ub.user_id
+      LEFT JOIN rh_db.branches b ON ub.branch_id = b.id
       ${where}
-      ORDER BY created_at DESC
+      GROUP BY u.id, u.name, u.email, u.password, u.active, u.created_at
+      ORDER BY u.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
     `;
 
-    return withConnection(async (client) => {
-      const { rows } = await client.query(query, params);
-      return rows.map(this.mapUserRow);
-    });
+    try {
+      return await withConnection(async (client) => {
+        const { rows } = await client.query(query, params);
+        return rows.map(this.mapUserRow);
+      });
+    } catch (error) {
+      console.error("Error in getUsers:", error);
+      throw new Error(`Failed to fetch users: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
   }
 
   async createUser(user: InsertUser): Promise<User> {

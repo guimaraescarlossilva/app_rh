@@ -1,12 +1,32 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./migrate-sql";
 import { randomUUID } from 'crypto';
+import { checkConnection } from "./db";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
+
+// Compression middleware
+app.use(compression());
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 // Structured logging middleware
 app.use((req, res, next) => {
@@ -18,7 +38,7 @@ app.use((req, res, next) => {
   
   res.on('finish', () => {
     const duration = Date.now() - startTime;
-    console.log(JSON.stringify({
+    const logData = {
       reqId,
       method: req.method,
       path: req.path,
@@ -26,98 +46,88 @@ app.use((req, res, next) => {
       duration: `${duration}ms`,
       userAgent: req.get('User-Agent'),
       ip: req.ip
-    }));
+    };
+    
+    // Log slow routes (>500ms)
+    if (duration > 500) {
+      console.warn(`🐌 [SLOW_ROUTE] ${req.method} ${req.path} took ${duration}ms`, logData);
+    } else {
+      console.log(JSON.stringify(logData));
+    }
   });
   
   next();
 });
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  // Log da requisição recebida
-  if (path.startsWith("/api")) {
-    console.log(`🔍 [SERVER] ${req.method} ${path} - Requisição recebida`);
-    if (req.body && Object.keys(req.body).length > 0) {
-      console.log(`📤 [SERVER] ${req.method} ${path} - Body:`, JSON.stringify(req.body, null, 2));
-    }
-  }
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  const dbHealthy = await checkConnection();
+  const health = {
+    status: dbHealthy ? 'healthy' : 'unhealthy',
+    timestamp: new Date().toISOString(),
+    database: dbHealthy ? 'connected' : 'disconnected'
   };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      console.log(`📊 [SERVER] ${logLine}`);
-      log(logLine);
-    }
-  });
-
-  next();
+  
+  res.status(dbHealthy ? 200 : 503).json(health);
 });
 
-(async () => {
-  console.log("🚀 [SERVER] Iniciando servidor...");
+// Register routes
+registerRoutes(app);
+
+// Setup Vite in development
+if (process.env.NODE_ENV === "development") {
+  setupVite(app);
+} else {
+  serveStatic(app);
+}
+
+// Error handling middleware
+app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+  const reqId = (req as any).reqId || randomUUID();
+  console.error(`[${reqId}] Unhandled error:`, error);
   
-  // Run database migrations on startup
+  res.status(500).json({
+    message: "Internal server error",
+    error: process.env.NODE_ENV === "development" ? error.message : "Something went wrong",
+    requestId: reqId
+  });
+});
+
+// 404 handler
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    message: "Not found",
+    path: req.path,
+    method: req.method
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
+
+async function startServer() {
   try {
+    console.log("🚀 [SERVER] Iniciando servidor...");
+    
+    // Run migrations
     console.log("🔄 [SERVER] Executando migrações do banco...");
     await runMigrations();
     console.log("✅ [SERVER] Migrações concluídas com sucesso");
+    
+    // Register routes
+    console.log("🛣️ [SERVER] Registrando rotas...");
+    console.log("✅ [SERVER] Rotas registradas com sucesso");
+    
+    // Start server
+    console.log(`🌐 [SERVER] Configurando servidor na porta ${PORT}...`);
+    app.listen(PORT, HOST, () => {
+      console.log(`🎉 [SERVER] Servidor rodando na porta ${PORT}`);
+      console.log(`🔗 [SERVER] URL: http://${HOST}:${PORT}`);
+    });
   } catch (error) {
-    console.error('❌ [SERVER] Falha nas migrações:', error);
+    console.error("❌ [SERVER] Falha ao iniciar servidor:", error);
     process.exit(1);
   }
+}
 
-  console.log("🛣️ [SERVER] Registrando rotas...");
-  const server = await registerRoutes(app);
-  console.log("✅ [SERVER] Rotas registradas com sucesso");
-
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  console.log(`🌐 [SERVER] Configurando servidor na porta ${port}...`);
-  
-  server.listen({
-    port,
-    host: "0.0.0.0",
-  }, () => {
-    console.log(`🎉 [SERVER] Servidor rodando na porta ${port}`);
-    console.log(`🔗 [SERVER] URL: http://0.0.0.0:${port}`);
-    log(`serving on port ${port}`);
-  });
-})();
+startServer();
