@@ -23,8 +23,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  insertUserSchema, 
-  insertPermissionGroupSchema,
   type User as SystemUser, 
   type InsertUser, 
   type PermissionGroup,
@@ -39,12 +37,20 @@ interface PermissionFormProps {
   onSuccess: () => void;
 }
 
-const userFormSchema = insertUserSchema.extend({
+const userFormSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
   branchIds: z.array(z.string()).min(1, "Selecione pelo menos uma filial"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
+});
+
+const groupFormSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  description: z.string().optional(),
 });
 
 export default function PermissionForm({ type, data, onSuccess }: PermissionFormProps) {
