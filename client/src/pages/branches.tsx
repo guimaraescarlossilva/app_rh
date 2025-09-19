@@ -50,6 +50,13 @@ export default function Branches() {
     },
   });
 
+  // Filter branches based on search term
+  const filteredBranches = branches.filter((branch) =>
+    branch.fantasyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    branch.cnpj.includes(searchTerm) ||
+    branch.city.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   // Log dos dados recebidos
   console.log("📊 [FRONTEND] Estado da query:", { branches, isLoading, error });
   
@@ -117,12 +124,6 @@ export default function Branches() {
       });
     },
   });
-
-  const filteredBranches = branches.filter((branch) =>
-    branch.fantasyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    branch.cnpj.includes(searchTerm) ||
-    branch.city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleEdit = (branch: Branch) => {
     setEditingBranch(branch);
