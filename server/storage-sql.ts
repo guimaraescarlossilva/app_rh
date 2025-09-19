@@ -79,6 +79,108 @@ export interface InsertEmployee {
   status?: 'ativo' | 'inativo' | 'afastado';
 }
 
+export interface PermissionGroup {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
+}
+
+export interface InsertPermissionGroup {
+  name: string;
+  description?: string;
+}
+
+export interface ModulePermission {
+  id: string;
+  groupId: string;
+  module: string;
+  canRead: boolean;
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+}
+
+export interface InsertModulePermission {
+  groupId: string;
+  module: string;
+  canRead: boolean;
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+}
+
+export interface PayrollEntry {
+  id: string;
+  employeeId: string;
+  month: number;
+  year: number;
+  baseSalary: number;
+  agreedSalary: number;
+  advance: number;
+  nightShiftAdditional: number;
+  nightShiftDsr: number;
+  overtime: number;
+  overtimeDsr: number;
+  vacationBonus: number;
+  fiveYearBonus: number;
+  positionGratification: number;
+  generalGratification: number;
+  cashierGratification: number;
+  familyAllowance: number;
+  holidayPay: number;
+  unhealthiness: number;
+  maternityLeave: number;
+  tips: number;
+  others: number;
+  vouchers: number;
+  grossAmount: number;
+  inss: number;
+  inssVacation: number;
+  irpf: number;
+  unionFee: number;
+  absences: number;
+  absenceReason?: string;
+  netAmount: number;
+  status: string;
+  processedAt?: Date;
+  createdAt: Date;
+}
+
+export interface InsertPayrollEntry {
+  employeeId: string;
+  month: number;
+  year: number;
+  baseSalary: number;
+  agreedSalary: number;
+  advance?: number;
+  nightShiftAdditional?: number;
+  nightShiftDsr?: number;
+  overtime?: number;
+  overtimeDsr?: number;
+  vacationBonus?: number;
+  fiveYearBonus?: number;
+  positionGratification?: number;
+  generalGratification?: number;
+  cashierGratification?: number;
+  familyAllowance?: number;
+  holidayPay?: number;
+  unhealthiness?: number;
+  maternityLeave?: number;
+  tips?: number;
+  others?: number;
+  vouchers?: number;
+  grossAmount: number;
+  inss?: number;
+  inssVacation?: number;
+  irpf?: number;
+  unionFee?: number;
+  absences?: number;
+  absenceReason?: string;
+  netAmount: number;
+  status?: string;
+}
+
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
@@ -101,6 +203,25 @@ export interface IStorage {
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee>;
   deleteEmployee(id: string): Promise<void>;
+
+  // Permission Groups
+  getPermissionGroups(params?: { limit?: number; offset?: number; search?: string }): Promise<PermissionGroup[]>;
+  getPermissionGroup(id: string): Promise<PermissionGroup | undefined>;
+  createPermissionGroup(group: InsertPermissionGroup): Promise<PermissionGroup>;
+  updatePermissionGroup(id: string, group: Partial<InsertPermissionGroup>): Promise<PermissionGroup>;
+  deletePermissionGroup(id: string): Promise<void>;
+
+  // Module Permissions
+  getModulePermissions(groupId: string): Promise<ModulePermission[]>;
+  setModulePermission(permission: InsertModulePermission): Promise<ModulePermission>;
+  deleteModulePermission(groupId: string, module: string): Promise<void>;
+
+  // Payroll
+  getPayroll(params?: { limit?: number; offset?: number; search?: string }): Promise<PayrollEntry[]>;
+  getPayrollEntry(id: string): Promise<PayrollEntry | undefined>;
+  createPayrollEntry(entry: InsertPayrollEntry): Promise<PayrollEntry>;
+  updatePayrollEntry(id: string, entry: Partial<InsertPayrollEntry>): Promise<PayrollEntry>;
+  deletePayrollEntry(id: string): Promise<void>;
 }
 
 export class SQLStorage implements IStorage {
@@ -544,6 +665,330 @@ export class SQLStorage implements IStorage {
 
   async deleteEmployee(id: string): Promise<void> {
     await withConnection((client) => client.query('DELETE FROM rh_db.employees WHERE id = $1', [id]));
+  }
+
+  // Permission Groups
+  async getPermissionGroups({ limit = 50, offset = 0, search }: { limit?: number; offset?: number; search?: string } = {}): Promise<PermissionGroup[]> {
+    const cappedLimit = Math.min(Math.max(limit, 1), 200);
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+
+    if (search) {
+      clauses.push(`(name ILIKE $${params.length + 1} OR description ILIKE $${params.length + 1})`);
+      params.push(`%${search}%`);
+    }
+
+    params.push(cappedLimit);
+    params.push(offset);
+
+    const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+    const query = `
+      SELECT id, name, description, created_at
+      FROM rh_db.permission_groups
+      ${where}
+      ORDER BY created_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `;
+
+    return withConnection(async (client) => {
+      const { rows } = await client.query(query, params);
+      return rows.map(this.mapPermissionGroupRow);
+    });
+  }
+
+  async getPermissionGroup(id: string): Promise<PermissionGroup | undefined> {
+    return withConnection(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, name, description, created_at
+         FROM rh_db.permission_groups
+         WHERE id = $1`,
+        [id]
+      );
+      return rows[0] ? this.mapPermissionGroupRow(rows[0]) : undefined;
+    });
+  }
+
+  async createPermissionGroup(group: InsertPermissionGroup): Promise<PermissionGroup> {
+    return withConnection(async (client) => {
+      const { rows } = await client.query(
+        `INSERT INTO rh_db.permission_groups (name, description)
+         VALUES ($1, $2)
+         RETURNING id, name, description, created_at`,
+        [group.name, group.description]
+      );
+      return this.mapPermissionGroupRow(rows[0]);
+    });
+  }
+
+  async updatePermissionGroup(id: string, group: Partial<InsertPermissionGroup>): Promise<PermissionGroup> {
+    const fields = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (group.name !== undefined) {
+      fields.push(`name = $${paramCount++}`);
+      values.push(group.name);
+    }
+    if (group.description !== undefined) {
+      fields.push(`description = $${paramCount++}`);
+      values.push(group.description);
+    }
+
+    if (fields.length === 0) {
+      throw new Error("No fields to update");
+    }
+
+    values.push(id);
+
+    return withConnection(async (client) => {
+      const { rows } = await client.query(
+        `UPDATE rh_db.permission_groups
+         SET ${fields.join(", ")}
+         WHERE id = $${paramCount}
+         RETURNING id, name, description, created_at`,
+        values
+      );
+      return this.mapPermissionGroupRow(rows[0]);
+    });
+  }
+
+  async deletePermissionGroup(id: string): Promise<void> {
+    return withConnection(async (client) => {
+      await client.query(
+        `DELETE FROM rh_db.permission_groups WHERE id = $1`,
+        [id]
+      );
+    });
+  }
+
+  // Module Permissions
+  async getModulePermissions(groupId: string): Promise<ModulePermission[]> {
+    return withConnection(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, group_id, module, can_read, can_create, can_update, can_delete
+         FROM rh_db.module_permissions
+         WHERE group_id = $1
+         ORDER BY module`,
+        [groupId]
+      );
+      return rows.map(this.mapModulePermissionRow);
+    });
+  }
+
+  async setModulePermission(permission: InsertModulePermission): Promise<ModulePermission> {
+    return withConnection(async (client) => {
+      const { rows } = await client.query(
+        `INSERT INTO rh_db.module_permissions (group_id, module, can_read, can_create, can_update, can_delete)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, group_id, module, can_read, can_create, can_update, can_delete`,
+        [permission.groupId, permission.module, permission.canRead, permission.canCreate, permission.canUpdate, permission.canDelete]
+      );
+      return this.mapModulePermissionRow(rows[0]);
+    });
+  }
+
+  async deleteModulePermission(groupId: string, module: string): Promise<void> {
+    return withConnection(async (client) => {
+      await client.query(
+        `DELETE FROM rh_db.module_permissions WHERE group_id = $1 AND module = $2`,
+        [groupId, module]
+      );
+    });
+  }
+
+  // Payroll
+  async getPayroll({ limit = 50, offset = 0, search }: { limit?: number; offset?: number; search?: string } = {}): Promise<PayrollEntry[]> {
+    const cappedLimit = Math.min(Math.max(limit, 1), 200);
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+
+    if (search) {
+      clauses.push(`e.name ILIKE $${params.length + 1}`);
+      params.push(`%${search}%`);
+    }
+
+    params.push(cappedLimit);
+    params.push(offset);
+
+    const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+    const query = `
+      SELECT p.id, p.employee_id, p.month, p.year, p.base_salary, p.agreed_salary,
+             p.advance, p.night_shift_additional, p.night_shift_dsr, p.overtime, p.overtime_dsr,
+             p.vacation_bonus, p.five_year_bonus, p.position_gratification, p.general_gratification,
+             p.cashier_gratification, p.family_allowance, p.holiday_pay, p.unhealthiness,
+             p.maternity_leave, p.tips, p.others, p.vouchers, p.gross_amount, p.inss,
+             p.inss_vacation, p.irpf, p.union_fee, p.absences, p.absence_reason, p.net_amount,
+             p.status, p.processed_at, p.created_at
+      FROM rh_db.payroll p
+      JOIN rh_db.employees e ON p.employee_id = e.id
+      ${where}
+      ORDER BY p.created_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `;
+
+    return withConnection(async (client) => {
+      const { rows } = await client.query(query, params);
+      return rows.map(this.mapPayrollRow);
+    });
+  }
+
+  async getPayrollEntry(id: string): Promise<PayrollEntry | undefined> {
+    return withConnection(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, employee_id, month, year, base_salary, agreed_salary,
+                advance, night_shift_additional, night_shift_dsr, overtime, overtime_dsr,
+                vacation_bonus, five_year_bonus, position_gratification, general_gratification,
+                cashier_gratification, family_allowance, holiday_pay, unhealthiness,
+                maternity_leave, tips, others, vouchers, gross_amount, inss,
+                inss_vacation, irpf, union_fee, absences, absence_reason, net_amount,
+                status, processed_at, created_at
+         FROM rh_db.payroll
+         WHERE id = $1`,
+        [id]
+      );
+      return rows[0] ? this.mapPayrollRow(rows[0]) : undefined;
+    });
+  }
+
+  async createPayrollEntry(entry: InsertPayrollEntry): Promise<PayrollEntry> {
+    return withConnection(async (client) => {
+      const { rows } = await client.query(
+        `INSERT INTO rh_db.payroll (
+           employee_id, month, year, base_salary, agreed_salary, advance, night_shift_additional,
+           night_shift_dsr, overtime, overtime_dsr, vacation_bonus, five_year_bonus,
+           position_gratification, general_gratification, cashier_gratification, family_allowance,
+           holiday_pay, unhealthiness, maternity_leave, tips, others, vouchers, gross_amount,
+           inss, inss_vacation, irpf, union_fee, absences, absence_reason, net_amount, status
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)
+         RETURNING id, employee_id, month, year, base_salary, agreed_salary,
+                   advance, night_shift_additional, night_shift_dsr, overtime, overtime_dsr,
+                   vacation_bonus, five_year_bonus, position_gratification, general_gratification,
+                   cashier_gratification, family_allowance, holiday_pay, unhealthiness,
+                   maternity_leave, tips, others, vouchers, gross_amount, inss,
+                   inss_vacation, irpf, union_fee, absences, absence_reason, net_amount,
+                   status, processed_at, created_at`,
+        [
+          entry.employeeId, entry.month, entry.year, entry.baseSalary, entry.agreedSalary,
+          entry.advance || 0, entry.nightShiftAdditional || 0, entry.nightShiftDsr || 0,
+          entry.overtime || 0, entry.overtimeDsr || 0, entry.vacationBonus || 0,
+          entry.fiveYearBonus || 0, entry.positionGratification || 0, entry.generalGratification || 0,
+          entry.cashierGratification || 0, entry.familyAllowance || 0, entry.holidayPay || 0,
+          entry.unhealthiness || 0, entry.maternityLeave || 0, entry.tips || 0, entry.others || 0,
+          entry.vouchers || 0, entry.grossAmount, entry.inss || 0, entry.inssVacation || 0,
+          entry.irpf || 0, entry.unionFee || 0, entry.absences || 0, entry.absenceReason,
+          entry.netAmount, entry.status || 'pendente'
+        ]
+      );
+      return this.mapPayrollRow(rows[0]);
+    });
+  }
+
+  async updatePayrollEntry(id: string, entry: Partial<InsertPayrollEntry>): Promise<PayrollEntry> {
+    const fields = [];
+    const values = [];
+    let paramCount = 1;
+
+    Object.entries(entry).forEach(([key, value]) => {
+      if (value !== undefined) {
+        const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+        fields.push(`${dbKey} = $${paramCount++}`);
+        values.push(value);
+      }
+    });
+
+    if (fields.length === 0) {
+      throw new Error("No fields to update");
+    }
+
+    values.push(id);
+
+    return withConnection(async (client) => {
+      const { rows } = await client.query(
+        `UPDATE rh_db.payroll
+         SET ${fields.join(", ")}
+         WHERE id = $${paramCount}
+         RETURNING id, employee_id, month, year, base_salary, agreed_salary,
+                   advance, night_shift_additional, night_shift_dsr, overtime, overtime_dsr,
+                   vacation_bonus, five_year_bonus, position_gratification, general_gratification,
+                   cashier_gratification, family_allowance, holiday_pay, unhealthiness,
+                   maternity_leave, tips, others, vouchers, gross_amount, inss,
+                   inss_vacation, irpf, union_fee, absences, absence_reason, net_amount,
+                   status, processed_at, created_at`,
+        values
+      );
+      return this.mapPayrollRow(rows[0]);
+    });
+  }
+
+  async deletePayrollEntry(id: string): Promise<void> {
+    return withConnection(async (client) => {
+      await client.query(
+        `DELETE FROM rh_db.payroll WHERE id = $1`,
+        [id]
+      );
+    });
+  }
+
+  // Helper methods
+  private mapPermissionGroupRow(row: any): PermissionGroup {
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      createdAt: row.created_at,
+    };
+  }
+
+  private mapModulePermissionRow(row: any): ModulePermission {
+    return {
+      id: row.id,
+      groupId: row.group_id,
+      module: row.module,
+      canRead: row.can_read,
+      canCreate: row.can_create,
+      canUpdate: row.can_update,
+      canDelete: row.can_delete,
+    };
+  }
+
+  private mapPayrollRow(row: any): PayrollEntry {
+    return {
+      id: row.id,
+      employeeId: row.employee_id,
+      month: row.month,
+      year: row.year,
+      baseSalary: parseFloat(row.base_salary),
+      agreedSalary: parseFloat(row.agreed_salary),
+      advance: parseFloat(row.advance),
+      nightShiftAdditional: parseFloat(row.night_shift_additional),
+      nightShiftDsr: parseFloat(row.night_shift_dsr),
+      overtime: parseFloat(row.overtime),
+      overtimeDsr: parseFloat(row.overtime_dsr),
+      vacationBonus: parseFloat(row.vacation_bonus),
+      fiveYearBonus: parseFloat(row.five_year_bonus),
+      positionGratification: parseFloat(row.position_gratification),
+      generalGratification: parseFloat(row.general_gratification),
+      cashierGratification: parseFloat(row.cashier_gratification),
+      familyAllowance: parseFloat(row.family_allowance),
+      holidayPay: parseFloat(row.holiday_pay),
+      unhealthiness: parseFloat(row.unhealthiness),
+      maternityLeave: parseFloat(row.maternity_leave),
+      tips: parseFloat(row.tips),
+      others: parseFloat(row.others),
+      vouchers: parseFloat(row.vouchers),
+      grossAmount: parseFloat(row.gross_amount),
+      inss: parseFloat(row.inss),
+      inssVacation: parseFloat(row.inss_vacation),
+      irpf: parseFloat(row.irpf),
+      unionFee: parseFloat(row.union_fee),
+      absences: parseFloat(row.absences),
+      absenceReason: row.absence_reason,
+      netAmount: parseFloat(row.net_amount),
+      status: row.status,
+      processedAt: row.processed_at,
+      createdAt: row.created_at,
+    };
   }
 }
 
