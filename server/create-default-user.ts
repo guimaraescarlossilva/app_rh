@@ -1,4 +1,4 @@
-import { withConnection } from './db';
+import { prisma } from './prisma';
 import bcrypt from 'bcrypt';
 
 async function createDefaultUser() {
@@ -6,12 +6,8 @@ async function createDefaultUser() {
     console.log('🔄 [DEFAULT_USER] Criando usuário padrão...');
 
     // Verifica se já existe um usuário com este CPF
-    const existingUser = await withConnection(async (client) => {
-      const { rows } = await client.query(
-        'SELECT id FROM rh_db.users WHERE cpf = $1',
-        ['027.399.371-21']
-      );
-      return rows[0];
+    const existingUser = await prisma.user.findUnique({
+      where: { cpf: '027.399.371-21' }
     });
 
     if (existingUser) {
@@ -23,14 +19,14 @@ async function createDefaultUser() {
     const hashedPassword = await bcrypt.hash('Carlinhos123', 10);
 
     // Cria o usuário
-    const user = await withConnection(async (client) => {
-      const { rows } = await client.query(
-        `INSERT INTO rh_db.users (name, email, cpf, password, active) 
-         VALUES ($1, $2, $3, $4, $5) 
-         RETURNING id, name, email, cpf`,
-        ['Carlos', 'carloseduguimaress@gmail.com', '027.399.371-21', hashedPassword, true]
-      );
-      return rows[0];
+    const user = await prisma.user.create({
+      data: {
+        name: 'Carlos',
+        email: 'carloseduguimaress@gmail.com',
+        cpf: '027.399.371-21',
+        password: hashedPassword,
+        active: true
+      }
     });
 
     console.log('✅ [DEFAULT_USER] Usuário Carlos criado com sucesso');
@@ -39,24 +35,17 @@ async function createDefaultUser() {
     console.log('🆔 CPF: 027.399.371-21');
 
     // Verifica se existe o grupo de administradores
-    let adminGroup = await withConnection(async (client) => {
-      const { rows } = await client.query(
-        'SELECT id FROM rh_db.permission_groups WHERE name = $1',
-        ['Administradores']
-      );
-      return rows[0];
+    let adminGroup = await prisma.permissionGroup.findUnique({
+      where: { name: 'Administradores' }
     });
 
     if (!adminGroup) {
       // Cria o grupo de administradores
-      adminGroup = await withConnection(async (client) => {
-        const { rows } = await client.query(
-          `INSERT INTO rh_db.permission_groups (name, description) 
-           VALUES ($1, $2) 
-           RETURNING id`,
-          ['Administradores', 'Grupo de administradores com acesso total']
-        );
-        return rows[0];
+      adminGroup = await prisma.permissionGroup.create({
+        data: {
+          name: 'Administradores',
+          description: 'Grupo de administradores com acesso total'
+        }
       });
       console.log('✅ [DEFAULT_USER] Grupo Administradores criado');
     }

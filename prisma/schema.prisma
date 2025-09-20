@@ -24,6 +24,7 @@ datasource db {
     userGroups   UserGroup[]
     userBranches UserBranch[]
 
+    @@map("users")
     @@schema("rh_db")
   }
 
@@ -47,6 +48,7 @@ datasource db {
     userBranches UserBranch[]
     employees    Employee[]
 
+    @@map("branches")
     @@schema("rh_db")
   }
 
@@ -61,6 +63,7 @@ datasource db {
     userGroups       UserGroup[]
     modulePermissions ModulePermission[]
 
+    @@map("permission_groups")
     @@schema("rh_db")
   }
 
@@ -76,6 +79,7 @@ datasource db {
     group  PermissionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
     @@unique([userId, groupId])
+    @@map("user_groups")
     @@schema("rh_db")
   }
 
@@ -91,6 +95,7 @@ datasource db {
     branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
     @@unique([userId, branchId])
+    @@map("user_branches")
     @@schema("rh_db")
   }
 
@@ -108,6 +113,7 @@ datasource db {
     group PermissionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
     @@unique([groupId, module])
+    @@map("module_permissions")
     @@schema("rh_db")
   }
 
