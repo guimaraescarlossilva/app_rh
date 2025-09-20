@@ -406,10 +406,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Job Positions routes
   app.get("/api/job-positions", async (req, res) => {
+    const reqId = (req as any).reqId || 'unknown';
+    
     try {
+      console.log(`🔍 [${reqId}] GET /api/job-positions - Buscando cargos/funções`);
+      console.error(`🚨 [${reqId}] FORÇANDO LOG - Chamando storage.getJobPositions()`);
+      
       const positions = await storage.getJobPositions();
+      
+      console.log(`✅ [${reqId}] GET /api/job-positions - ${positions.length} cargos encontrados`);
+      console.error(`🚨 [${reqId}] FORÇANDO LOG - Cargos retornados:`, JSON.stringify(positions, null, 2));
+      
       res.json(positions);
     } catch (error) {
+      console.error(`❌ [${reqId}] GET /api/job-positions - Erro:`, error);
+      console.error(`🚨 [${reqId}] FORÇANDO LOG - Erro ao buscar cargos:`, error instanceof Error ? error.message : String(error));
       res.status(500).json({ message: "Failed to fetch job positions" });
     }
   });
@@ -556,11 +567,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/employees", async (req, res) => {
+    const reqId = (req as any).reqId || 'unknown';
+    
     try {
-      console.log("🔍 [API] POST /api/employees - Tentativa de criar funcionário:", req.body);
+      console.log(`🔍 [${reqId}] POST /api/employees - INÍCIO DA REQUISIÇÃO`);
+      console.log(`📝 [${reqId}] POST /api/employees - Request Body:`, JSON.stringify(req.body, null, 2));
+      console.log(`🔗 [${reqId}] POST /api/employees - Headers:`, JSON.stringify(req.headers, null, 2));
+      
+      // Força o log no console mesmo em produção
+      console.error(`🚨 [${reqId}] FORÇANDO LOG - Tentativa de criar funcionário:`, req.body);
       
       const validatedData = insertEmployeeSchema.parse(req.body);
-      console.log("✅ [API] POST /api/employees - Dados validados:", validatedData);
+      console.log(`✅ [${reqId}] POST /api/employees - Dados validados:`, JSON.stringify(validatedData, null, 2));
+      console.error(`🚨 [${reqId}] FORÇANDO LOG - Dados validados OK`);
       
       // Converte a data de string para Date
       const employeeData = {
@@ -568,24 +587,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         admissionDate: new Date(validatedData.admissionDate)
       };
       
+      console.log(`🔄 [${reqId}] POST /api/employees - Dados para criação:`, JSON.stringify(employeeData, null, 2));
+      console.error(`🚨 [${reqId}] FORÇANDO LOG - Chamando storage.createEmployee`);
+      
       const employee = await storage.createEmployee(employeeData);
-      console.log("✅ [API] POST /api/employees - Funcionário criado:", employee);
+      
+      console.log(`✅ [${reqId}] POST /api/employees - Funcionário criado:`, JSON.stringify(employee, null, 2));
+      console.error(`🚨 [${reqId}] FORÇANDO LOG - Funcionário criado com sucesso`);
       
       res.status(201).json(employee);
     } catch (error) {
-      console.error("❌ [API] POST /api/employees - Erro:", error);
+      console.error(`❌ [${reqId}] POST /api/employees - ERRO CAPTURADO:`, error);
+      console.error(`🚨 [${reqId}] FORÇANDO LOG - Stack trace:`, error instanceof Error ? error.stack : 'No stack trace');
       
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
+        const errorResponse = { 
           message: "Dados inválidos", 
           errors: error.errors.map(e => ({
             field: e.path.join('.'),
             message: e.message
           }))
-        });
+        };
+        
+        console.error(`🚨 [${reqId}] FORÇANDO LOG - Erro de validação Zod:`, JSON.stringify(errorResponse, null, 2));
+        return res.status(400).json(errorResponse);
       }
       
-      res.status(500).json({ message: "Erro interno do servidor" });
+      // Log detalhado do erro
+      console.error(`🚨 [${reqId}] FORÇANDO LOG - Erro não é Zod:`, {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'No stack'
+      });
+      
+      res.status(500).json({ message: "Erro interno do servidor", requestId: reqId });
     }
   });
 
