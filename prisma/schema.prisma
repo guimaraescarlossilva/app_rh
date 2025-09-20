@@ -127,6 +127,7 @@ datasource db {
     // Relacionamentos
     employees Employee[]
     
+    @@map("job_positions")
     @@schema("rh_db")
   }
 

@@ -2,6 +2,23 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage-prisma";
 import bcrypt from "bcrypt";
+import { z } from "zod";
+
+// Schema de validação para funcionários
+const insertEmployeeSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  cpf: z.string().min(11, "CPF é obrigatório"),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  branchId: z.string().min(1, "Filial é obrigatória"),
+  positionId: z.string().optional(),
+  admissionDate: z.string().min(1, "Data de admissão é obrigatória"),
+  baseSalary: z.number().min(0, "Salário base deve ser positivo"),
+  agreedSalary: z.number().min(0, "Salário acordado deve ser positivo"),
+  advancePercentage: z.number().min(0).max(100).optional(),
+  status: z.enum(["ATIVO", "INATIVO", "AFASTADO"]).default("ATIVO"),
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
@@ -540,11 +557,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/employees", async (req, res) => {
     try {
+      console.log("🔍 [API] POST /api/employees - Tentativa de criar funcionário:", req.body);
+      
       const validatedData = insertEmployeeSchema.parse(req.body);
-      const employee = await storage.createEmployee(validatedData);
+      console.log("✅ [API] POST /api/employees - Dados validados:", validatedData);
+      
+      // Converte a data de string para Date
+      const employeeData = {
+        ...validatedData,
+        admissionDate: new Date(validatedData.admissionDate)
+      };
+      
+      const employee = await storage.createEmployee(employeeData);
+      console.log("✅ [API] POST /api/employees - Funcionário criado:", employee);
+      
       res.status(201).json(employee);
     } catch (error) {
-      res.status(400).json({ message: "Invalid employee data" });
+      console.error("❌ [API] POST /api/employees - Erro:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        });
+      }
+      
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
 
