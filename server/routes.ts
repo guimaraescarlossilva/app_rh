@@ -12,7 +12,7 @@ const insertEmployeeSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   branchId: z.string().min(1, "Filial é obrigatória"),
-  positionId: z.string().optional(),
+  positionId: z.string().optional().nullable(),
   admissionDate: z.string().min(1, "Data de admissão é obrigatória"),
   baseSalary: z.number().min(0, "Salário base deve ser positivo"),
   agreedSalary: z.number().min(0, "Salário acordado deve ser positivo"),
@@ -581,10 +581,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`✅ [${reqId}] POST /api/employees - Dados validados:`, JSON.stringify(validatedData, null, 2));
       console.error(`🚨 [${reqId}] FORÇANDO LOG - Dados validados OK`);
       
-      // Converte a data de string para Date
+      // Converte a data de string para Date e corrige positionId vazio
       const employeeData = {
         ...validatedData,
-        admissionDate: new Date(validatedData.admissionDate)
+        admissionDate: new Date(validatedData.admissionDate),
+        positionId: validatedData.positionId === "" ? null : validatedData.positionId
       };
       
       console.log(`🔄 [${reqId}] POST /api/employees - Dados para criação:`, JSON.stringify(employeeData, null, 2));

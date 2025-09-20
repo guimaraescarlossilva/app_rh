@@ -63,7 +63,7 @@ export interface Employee {
   baseSalary: number;
   agreedSalary: number;
   advancePercentage: number;
-  status: 'ATIVO' | 'INATIVO' | 'AFASTADO';
+  status: 'ativo' | 'inativo' | 'afastado';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,12 +75,24 @@ export interface InsertEmployee {
   phone?: string;
   address?: string;
   branchId: string;
-  positionId?: string;
+  positionId?: string | null;
   admissionDate: Date;
   baseSalary: number;
   agreedSalary: number;
   advancePercentage?: number;
-  status?: 'ATIVO' | 'INATIVO' | 'AFASTADO';
+  status?: 'ativo' | 'inativo' | 'afastado';
+}
+
+export interface JobPosition {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface InsertJobPosition {
+  name: string;
+  description?: string;
 }
 
 export interface PermissionGroup {
@@ -418,6 +430,81 @@ export class PrismaStorage implements IStorage {
     
     // Invalida cache de filiais
     cache.invalidatePattern('^branches:');
+  }
+
+  // Job Positions
+  async getJobPositions(): Promise<JobPosition[]> {
+    const cacheKey = 'job_positions:list:all';
+    
+    return withCache(cacheKey, async () => {
+      const positions = await prisma.jobPosition.findMany({
+        orderBy: { name: 'asc' }
+      });
+      
+      return positions.map(position => ({
+        id: position.id,
+        name: position.name,
+        description: position.description,
+        createdAt: position.createdAt.toISOString()
+      }));
+    }, 10 * 60 * 1000); // Cache por 10 minutos
+  }
+
+  async getJobPosition(id: string): Promise<JobPosition | undefined> {
+    const position = await prisma.jobPosition.findUnique({
+      where: { id }
+    });
+    
+    if (!position) return undefined;
+    
+    return {
+      id: position.id,
+      name: position.name,
+      description: position.description,
+      createdAt: position.createdAt.toISOString()
+    };
+  }
+
+  async createJobPosition(position: InsertJobPosition): Promise<JobPosition> {
+    const newPosition = await prisma.jobPosition.create({
+      data: position
+    });
+    
+    // Invalida cache de cargos
+    cache.invalidatePattern('^job_positions:');
+    
+    return {
+      id: newPosition.id,
+      name: newPosition.name,
+      description: newPosition.description,
+      createdAt: newPosition.createdAt.toISOString()
+    };
+  }
+
+  async updateJobPosition(id: string, position: Partial<InsertJobPosition>): Promise<JobPosition> {
+    const updatedPosition = await prisma.jobPosition.update({
+      where: { id },
+      data: position
+    });
+    
+    // Invalida cache de cargos
+    cache.invalidatePattern('^job_positions:');
+    
+    return {
+      id: updatedPosition.id,
+      name: updatedPosition.name,
+      description: updatedPosition.description,
+      createdAt: updatedPosition.createdAt.toISOString()
+    };
+  }
+
+  async deleteJobPosition(id: string): Promise<void> {
+    await prisma.jobPosition.delete({
+      where: { id }
+    });
+    
+    // Invalida cache de cargos
+    cache.invalidatePattern('^job_positions:');
   }
 
   // Employees
