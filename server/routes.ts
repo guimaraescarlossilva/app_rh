@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage-prisma";
+import { prisma } from "./prisma";
 import bcrypt from "bcrypt";
 import { z } from "zod";
 
@@ -818,6 +819,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Initialize payroll snapshot for a competency (month/year)
+  app.post("/api/payroll/init", async (req, res) => {
+    const reqId = (req as any).reqId || 'unknown';
+    try {
+      const { employeeId, month, year } = req.body as { employeeId: string; month: number; year: number };
+
+      if (!employeeId || !month || !year) {
+        return res.status(400).json({ message: "employeeId, month e year são obrigatórios" });
+      }
+
+      console.log(`🔍 [${reqId}] POST /api/payroll/init - employeeId=${employeeId} ${month}/${year}`);
+
+      // Carrega dados atuais do funcionário
+      const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
+      if (!employee) {
+        return res.status(404).json({ message: "Funcionário não encontrado" });
+      }
+
+      // Define defaults com snapshot dos dados fixos
+      const snapshot = {
+        employeeId,
+        month,
+        year,
+        baseSalary: Number(employee.baseSalary),
+        agreedSalary: Number(employee.agreedSalary),
+        advance: 0,
+        nightShiftAdditional: 0,
+        nightShiftDsr: 0,
+        overtime: 0,
+        overtimeDsr: 0,
+        vacationBonus: 0,
+        fiveYearBonus: 0,
+        positionGratification: 0,
+        generalGratification: 0,
+        cashierGratification: 0,
+        familyAllowance: 0,
+        holidayPay: 0,
+        unhealthiness: 0,
+        maternityLeave: 0,
+        tips: 0,
+        others: 0,
+        vouchers: 0,
+        grossAmount: Number(employee.baseSalary),
+        inss: 0,
+        inssVacation: 0,
+        irpf: 0,
+        unionFee: 0,
+        absences: 0,
+        absenceReason: null,
+        netAmount: Number(employee.baseSalary),
+        status: 'pendente' as const,
+      };
+
+      console.log(`✅ [${reqId}] POST /api/payroll/init - Snapshot gerado`, snapshot);
+      return res.json(snapshot);
+    } catch (error) {
+      console.error(`❌ [${reqId}] POST /api/payroll/init - Erro:`, error);
+      return res.status(500).json({ message: "Erro ao inicializar folha" });
+    }
+  });
+
   app.get("/api/employees/:employeeId/payroll", async (req, res) => {
     try {
       // TODO: Implement getEmployeePayroll method
@@ -828,10 +890,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/payroll", async (req, res) => {
+    const reqId = (req as any).reqId || 'unknown';
     try {
-      const payrollEntry = await storage.createPayrollEntry(req.body);
+      const body = req.body;
+      // Auto-preenche defaults se não vierem do cliente
+      const employee = await prisma.employee.findUnique({ where: { id: body.employeeId } });
+      if (!employee) {
+        return res.status(404).json({ message: "Funcionário não encontrado" });
+      }
+
+      const entry = {
+        employeeId: body.employeeId,
+        month: Number(body.month),
+        year: Number(body.year),
+        baseSalary: Number(body.baseSalary ?? employee.baseSalary),
+        agreedSalary: Number(body.agreedSalary ?? employee.agreedSalary),
+        advance: Number(body.advance ?? 0),
+        nightShiftAdditional: Number(body.nightShiftAdditional ?? 0),
+        nightShiftDsr: Number(body.nightShiftDsr ?? 0),
+        overtime: Number(body.overtime ?? 0),
+        overtimeDsr: Number(body.overtimeDsr ?? 0),
+        vacationBonus: Number(body.vacationBonus ?? 0),
+        fiveYearBonus: Number(body.fiveYearBonus ?? 0),
+        positionGratification: Number(body.positionGratification ?? 0),
+        generalGratification: Number(body.generalGratification ?? 0),
+        cashierGratification: Number(body.cashierGratification ?? 0),
+        familyAllowance: Number(body.familyAllowance ?? 0),
+        holidayPay: Number(body.holidayPay ?? 0),
+        unhealthiness: Number(body.unhealthiness ?? 0),
+        maternityLeave: Number(body.maternityLeave ?? 0),
+        tips: Number(body.tips ?? 0),
+        others: Number(body.others ?? 0),
+        vouchers: Number(body.vouchers ?? 0),
+        grossAmount: Number(body.grossAmount ?? employee.baseSalary),
+        inss: Number(body.inss ?? 0),
+        inssVacation: Number(body.inssVacation ?? 0),
+        irpf: Number(body.irpf ?? 0),
+        unionFee: Number(body.unionFee ?? 0),
+        absences: Number(body.absences ?? 0),
+        absenceReason: body.absenceReason ?? null,
+        netAmount: Number(body.netAmount ?? employee.baseSalary),
+        status: String(body.status ?? 'pendente'),
+      };
+
+      console.log(`🔄 [${reqId}] POST /api/payroll - Entry normalizado:`, entry);
+      const payrollEntry = await storage.createPayrollEntry(entry as any);
       res.status(201).json(payrollEntry);
     } catch (error) {
+      console.error(`❌ [${reqId}] POST /api/payroll - Erro:`, error);
       res.status(400).json({ message: "Invalid payroll data" });
     }
   });
