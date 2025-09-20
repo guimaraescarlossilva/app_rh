@@ -35,6 +35,13 @@ export default function Employees() {
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["/api/employees"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/employees");
+      return response.json();
+    },
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 5 * 60 * 1000,
   });
 
   const deleteMutation = useMutation({
@@ -108,7 +115,15 @@ export default function Employees() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-foreground">Gestão de Funcionários</h2>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <Dialog 
+            open={isFormOpen} 
+            onOpenChange={(open) => {
+              setIsFormOpen(open);
+              if (!open) {
+                setSelectedEmployee(null);
+              }
+            }}
+          >
             <DialogTrigger asChild>
               <Button 
                 onClick={() => setSelectedEmployee(null)}

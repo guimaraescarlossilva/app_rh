@@ -21,8 +21,24 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { insertEmployeeSchema, type Employee, type InsertEmployee } from "@shared/types";
+import { type Employee, type InsertEmployee } from "@shared/types";
 import { apiRequest } from "@/lib/queryClient";
+import { z } from "zod";
+
+const employeeFormSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  cpf: z.string().min(11, "CPF é obrigatório"),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  branchId: z.string().min(1, "Filial é obrigatória"),
+  positionId: z.string().optional(),
+  admissionDate: z.string().min(1, "Data de admissão é obrigatória"),
+  baseSalary: z.string().min(1, "Salário base é obrigatório"),
+  agreedSalary: z.string().min(1, "Salário acordado é obrigatório"),
+  advancePercentage: z.string().optional(),
+  status: z.enum(["ativo", "inativo", "afastado"]).default("ativo"),
+});
 
 interface EmployeeFormProps {
   employee?: Employee | null;
@@ -35,14 +51,24 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
 
   const { data: jobPositions = [] } = useQuery({
     queryKey: ["/api/job-positions"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/job-positions");
+      return response.json();
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutos
   });
 
   const { data: branches = [] } = useQuery({
     queryKey: ["/api/branches"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/branches");
+      return response.json();
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutos
   });
 
-  const form = useForm<InsertEmployee>({
-    resolver: zodResolver(insertEmployeeSchema),
+  const form = useForm<z.infer<typeof employeeFormSchema>>({
+    resolver: zodResolver(employeeFormSchema),
     defaultValues: {
       name: "",
       cpf: "",
@@ -69,18 +95,25 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
         address: employee.address || "",
         branchId: employee.branchId || "",
         positionId: employee.positionId || "",
-        admissionDate: employee.admissionDate,
-        baseSalary: employee.baseSalary,
-        agreedSalary: employee.agreedSalary,
-        advancePercentage: employee.advancePercentage || "40.00",
+        admissionDate: employee.admissionDate.split('T')[0], // Converte para formato date input
+        baseSalary: String(employee.baseSalary),
+        agreedSalary: String(employee.agreedSalary),
+        advancePercentage: String(employee.advancePercentage || 40.00),
         status: employee.status,
       });
     }
   }, [employee, form]);
 
   const createMutation = useMutation({
-    mutationFn: async (data: InsertEmployee) => {
-      const response = await apiRequest("POST", "/api/employees", data);
+    mutationFn: async (data: z.infer<typeof employeeFormSchema>) => {
+      // Converte strings para números onde necessário
+      const employeeData: InsertEmployee = {
+        ...data,
+        baseSalary: Number(data.baseSalary),
+        agreedSalary: Number(data.agreedSalary),
+        advancePercentage: data.advancePercentage ? Number(data.advancePercentage) : 40.00,
+      };
+      const response = await apiRequest("POST", "/api/employees", employeeData);
       return response.json();
     },
     onSuccess: () => {
@@ -101,8 +134,15 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: InsertEmployee) => {
-      const response = await apiRequest("PUT", `/api/employees/${employee!.id}`, data);
+    mutationFn: async (data: z.infer<typeof employeeFormSchema>) => {
+      // Converte strings para números onde necessário
+      const employeeData: InsertEmployee = {
+        ...data,
+        baseSalary: Number(data.baseSalary),
+        agreedSalary: Number(data.agreedSalary),
+        advancePercentage: data.advancePercentage ? Number(data.advancePercentage) : 40.00,
+      };
+      const response = await apiRequest("PUT", `/api/employees/${employee!.id}`, employeeData);
       return response.json();
     },
     onSuccess: () => {
@@ -122,7 +162,7 @@ export default function EmployeeForm({ employee, onSuccess }: EmployeeFormProps)
     },
   });
 
-  const onSubmit = (data: InsertEmployee) => {
+  const onSubmit = (data: z.infer<typeof employeeFormSchema>) => {
     if (employee) {
       updateMutation.mutate(data);
     } else {
