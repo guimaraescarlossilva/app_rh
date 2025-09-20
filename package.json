@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && npm run build",
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "prisma generate && vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "cross-env NODE_ENV=production node dist/index.js",
@@ -14,6 +14,13 @@
     "db:stats": "psql $DATABASE_URL -c \"SELECT query, calls, total_time, mean_time, rows FROM pg_stat_statements WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database()) ORDER BY mean_time DESC LIMIT 10;\""
   },
   "dependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "vite": "^5.4.20",
+    "esbuild": "^0.25.0",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.17",
+    "autoprefixer": "^10.4.20",
+    "cross-env": "^10.0.0",
     "@hookform/resolvers": "^3.10.0",
     "@prisma/client": "^6.16.2",
     "@radix-ui/react-accordion": "^1.2.4",
@@ -99,15 +106,8 @@
     "@types/pg": "^8.10.9",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.7.0",
-    "autoprefixer": "^10.4.20",
-    "cross-env": "^10.0.0",
-    "esbuild": "^0.25.0",
-    "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.17",
     "tsx": "^4.20.5",
-    "typescript": "5.6.3",
-    "vite": "^5.4.20"
+    "typescript": "5.6.3"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
