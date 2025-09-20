@@ -49,4 +49,29 @@ export const getQueryFn: <T>(options: {
     return data;
   };
 
-export const queryClient = new QueryClient();
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Cache por 5 minutos por padrão
+      staleTime: 5 * 60 * 1000,
+      // Manter dados em cache por 10 minutos
+      gcTime: 10 * 60 * 1000,
+      // Retry automático com backoff exponencial
+      retry: (failureCount, error) => {
+        if (error instanceof Error && error.message.includes('401')) {
+          return false; // Não retry em 401
+        }
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // Refetch automático quando a janela ganha foco (apenas se dados estão stale)
+      refetchOnWindowFocus: 'always',
+      // Não refetch automaticamente em reconexão de rede
+      refetchOnReconnect: false,
+    },
+    mutations: {
+      // Retry mutations apenas uma vez
+      retry: 1,
+    },
+  },
+});

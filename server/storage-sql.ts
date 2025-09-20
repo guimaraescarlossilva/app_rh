@@ -1,4 +1,5 @@
 import { pool, withConnection } from "./db";
+import { withCache, CacheKeys, cache } from "./cache";
 
 // Types
 export interface User {
@@ -251,47 +252,86 @@ export class SQLStorage implements IStorage {
   }
 
   async getUsers({ limit = 50, offset = 0, search }: { limit?: number; offset?: number; search?: string } = {}): Promise<User[]> {
-    const cappedLimit = Math.min(Math.max(limit, 1), 200);
-    const clauses: string[] = [];
-    const params: unknown[] = [];
+    const cacheKey = CacheKeys.users(search, limit, offset);
+    
+    return withCache(cacheKey, async () => {
+      const cappedLimit = Math.min(Math.max(limit, 1), 200);
+      const clauses: string[] = [];
+      const params: unknown[] = [];
 
-    if (search) {
-      clauses.push(`(u.name ILIKE $${params.length + 1} OR u.email ILIKE $${params.length + 1})`);
-      params.push(`%${search}%`);
-    }
+      if (search) {
+        clauses.push(`(u.name ILIKE $${params.length + 1} OR u.email ILIKE $${params.length + 1})`);
+        params.push(`%${search}%`);
+      }
 
-    params.push(cappedLimit);
-    params.push(offset);
+      params.push(cappedLimit);
+      params.push(offset);
 
-    const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-    const query = `
-      SELECT u.id, u.name, u.email, u.password, u.active, u.created_at,
-             STRING_AGG(DISTINCT pg.name, ', ') as group_names,
-             STRING_AGG(DISTINCT b.fantasy_name, ', ') as branch_names
-      FROM rh_db.users u
-      LEFT JOIN rh_db.user_groups ug ON u.id = ug.user_id
-      LEFT JOIN rh_db.permission_groups pg ON ug.group_id = pg.id
-      LEFT JOIN rh_db.user_branches ub ON u.id = ub.user_id
-      LEFT JOIN rh_db.branches b ON ub.branch_id = b.id
-      ${where}
-      GROUP BY u.id, u.name, u.email, u.password, u.active, u.created_at
-      ORDER BY u.created_at DESC
-      LIMIT $${params.length - 1} OFFSET $${params.length}
-    `;
+      const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+      
+      // Consulta otimizada: primeiro busca os usuários, depois busca os relacionamentos
+      const usersQuery = `
+        SELECT u.id, u.name, u.email, u.password, u.active, u.created_at
+        FROM rh_db.users u
+        ${where}
+        ORDER BY u.created_at DESC
+        LIMIT $${params.length - 1} OFFSET $${params.length}
+      `;
 
-    try {
-      return await withConnection(async (client) => {
-        const { rows } = await client.query(query, params);
-        return rows.map(this.mapUserRow);
-      });
-    } catch (error) {
-      console.error("Error in getUsers:", error);
-      throw new Error(`Failed to fetch users: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
+      try {
+        return await withConnection(async (client) => {
+          // Busca usuários primeiro
+          const { rows: users } = await client.query(usersQuery, params);
+          
+          if (users.length === 0) {
+            return [];
+          }
+
+          const userIds = users.map(u => u.id);
+          
+          // Busca grupos de permissão em uma consulta separada
+          const groupsQuery = `
+            SELECT ug.user_id, STRING_AGG(pg.name, ', ') as group_names
+            FROM rh_db.user_groups ug
+            JOIN rh_db.permission_groups pg ON ug.group_id = pg.id
+            WHERE ug.user_id = ANY($1)
+            GROUP BY ug.user_id
+          `;
+          
+          // Busca filiais em uma consulta separada
+          const branchesQuery = `
+            SELECT ub.user_id, STRING_AGG(b.fantasy_name, ', ') as branch_names
+            FROM rh_db.user_branches ub
+            JOIN rh_db.branches b ON ub.branch_id = b.id
+            WHERE ub.user_id = ANY($1)
+            GROUP BY ub.user_id
+          `;
+
+          const [groupsResult, branchesResult] = await Promise.all([
+            client.query(groupsQuery, [userIds]),
+            client.query(branchesQuery, [userIds])
+          ]);
+
+          // Cria mapas para lookup rápido
+          const groupsMap = new Map(groupsResult.rows.map(g => [g.user_id, g.group_names]));
+          const branchesMap = new Map(branchesResult.rows.map(b => [b.user_id, b.branch_names]));
+
+          // Combina os dados
+          return users.map(user => ({
+            ...this.mapUserRow(user),
+            groupNames: groupsMap.get(user.id) || null,
+            branchNames: branchesMap.get(user.id) || null
+          }));
+        });
+      } catch (error) {
+        console.error("Error in getUsers:", error);
+        throw new Error(`Failed to fetch users: ${error instanceof Error ? error.message : "Unknown error"}`);
+      }
+    }, 2 * 60 * 1000); // Cache por 2 minutos
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    return withConnection(async (client) => {
+    const result = await withConnection(async (client) => {
       const { rows } = await client.query(
         `INSERT INTO rh_db.users (name, email, password, active)
          VALUES ($1, $2, $3, COALESCE($4, TRUE))
@@ -300,6 +340,11 @@ export class SQLStorage implements IStorage {
       );
       return this.mapUserRow(rows[0]);
     });
+    
+    // Invalida cache de usuários
+    cache.invalidatePattern('^users:');
+    
+    return result;
   }
 
   async updateUser(id: string, user: Partial<InsertUser>): Promise<User> {
@@ -358,32 +403,36 @@ export class SQLStorage implements IStorage {
 
   // Branches
   async getBranches({ limit = 50, offset = 0, search }: { limit?: number; offset?: number; search?: string } = {}): Promise<Branch[]> {
-    const cappedLimit = Math.min(Math.max(limit, 1), 200);
-    const clauses: string[] = [];
-    const params: unknown[] = [];
+    const cacheKey = CacheKeys.branches(search, limit, offset);
+    
+    return withCache(cacheKey, async () => {
+      const cappedLimit = Math.min(Math.max(limit, 1), 200);
+      const clauses: string[] = [];
+      const params: unknown[] = [];
 
-    if (search) {
-      clauses.push(`(fantasy_name ILIKE $${params.length + 1} OR cnpj ILIKE $${params.length + 1})`);
-      params.push(`%${search}%`);
-    }
+      if (search) {
+        clauses.push(`(fantasy_name ILIKE $${params.length + 1} OR cnpj ILIKE $${params.length + 1})`);
+        params.push(`%${search}%`);
+      }
 
-    params.push(cappedLimit);
-    params.push(offset);
+      params.push(cappedLimit);
+      params.push(offset);
 
-    const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-    const query = `
-      SELECT id, fantasy_name, address, phone, email, cnpj, city, state,
-             neighborhood, zip_code, active, created_at, updated_at
-      FROM rh_db.branches
-      ${where}
-      ORDER BY updated_at DESC
-      LIMIT $${params.length - 1} OFFSET $${params.length}
-    `;
+      const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+      const query = `
+        SELECT id, fantasy_name, address, phone, email, cnpj, city, state,
+               neighborhood, zip_code, active, created_at, updated_at
+        FROM rh_db.branches
+        ${where}
+        ORDER BY updated_at DESC
+        LIMIT $${params.length - 1} OFFSET $${params.length}
+      `;
 
-    return withConnection(async (client) => {
-      const { rows } = await client.query(query, params);
-      return rows.map(this.mapBranchRow);
-    });
+      return withConnection(async (client) => {
+        const { rows } = await client.query(query, params);
+        return rows.map(this.mapBranchRow);
+      });
+    }, 5 * 60 * 1000); // Cache por 5 minutos (filiais mudam menos)
   }
 
   private mapBranchRow(row: any): Branch {
