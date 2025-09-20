@@ -17,7 +17,7 @@ const insertEmployeeSchema = z.object({
   baseSalary: z.number().min(0, "Salário base deve ser positivo"),
   agreedSalary: z.number().min(0, "Salário acordado deve ser positivo"),
   advancePercentage: z.number().min(0).max(100).optional(),
-  status: z.enum(["ATIVO", "INATIVO", "AFASTADO"]).default("ATIVO"),
+  status: z.enum(["ativo", "inativo", "afastado"]).default("ativo"),
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {

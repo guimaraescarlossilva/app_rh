@@ -145,7 +145,7 @@ datasource db {
     baseSalary        Decimal     @map("base_salary") @db.Decimal(10, 2)
     agreedSalary      Decimal     @map("agreed_salary") @db.Decimal(10, 2)
     advancePercentage Decimal     @default(40.00) @map("advance_percentage") @db.Decimal(5, 2)
-    status            EmployeeStatus @default(ATIVO)
+    status            EmployeeStatus @default(ativo)
     createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamp
     updatedAt         DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp
 
@@ -254,9 +254,9 @@ datasource db {
 
   // Enums
 enum EmployeeStatus {
-  ATIVO
-  INATIVO
-  AFASTADO
+  ativo
+  inativo
+  afastado
 
   @@schema("rh_db")
 }
