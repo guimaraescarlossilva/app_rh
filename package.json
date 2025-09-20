@@ -11,6 +11,7 @@
     "check": "tsc",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "test:load": "npx autocannon -d 20 -c 50 http://localhost:5000/api/branches?limit=50",
+    "debug:db": "tsx server/debug-db.ts",
     "db:stats": "psql $DATABASE_URL -c \"SELECT query, calls, total_time, mean_time, rows FROM pg_stat_statements WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database()) ORDER BY mean_time DESC LIMIT 10;\""
   },
   "dependencies": {

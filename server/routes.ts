@@ -44,13 +44,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       console.log("🔍 [API] POST /api/auth/login - Tentativa de login");
+      console.log("🔍 [API] POST /api/auth/login - Request body:", req.body);
+      
       const { cpf, password } = req.body;
       
       if (!cpf || !password) {
+        console.log("❌ [API] POST /api/auth/login - CPF ou senha não fornecidos");
         return res.status(400).json({ message: "CPF e senha são obrigatórios" });
       }
 
       console.log("🔍 [API] POST /api/auth/login - Buscando usuário por CPF:", cpf);
+      
+      // Teste de conexão com Prisma
+      try {
+        const { prisma } = await import('./prisma');
+        await prisma.$queryRaw`SELECT 1`;
+        console.log("✅ [API] POST /api/auth/login - Conexão com Prisma OK");
+      } catch (dbError) {
+        console.error("❌ [API] POST /api/auth/login - Erro de conexão com Prisma:", dbError);
+        throw new Error("Erro de conexão com o banco de dados");
+      }
+      
       const user = await storage.getUserByCpf(cpf);
       
       if (!user) {
