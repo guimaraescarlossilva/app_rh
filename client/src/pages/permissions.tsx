@@ -48,6 +48,10 @@ export default function Permissions() {
     refetch: refetchUsers
   } = useQuery({
     queryKey: ["/api/users"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/users");
+      return response.json();
+    },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 5 * 60 * 1000,
@@ -60,6 +64,10 @@ export default function Permissions() {
     refetch: refetchGroups
   } = useQuery({
     queryKey: ["/api/permissions/groups"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/permissions/groups");
+      return response.json();
+    },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 5 * 60 * 1000,

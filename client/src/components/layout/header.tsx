@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/use-auth";
 
 const pageNames = {
   "/": "Dashboard",
@@ -23,17 +24,12 @@ const pageNames = {
 
 export default function Header() {
   const [location] = useLocation();
+  const { user, logout } = useAuth();
   const currentPageName = pageNames[location as keyof typeof pageNames] || "Dashboard";
-  
-  // Obter dados do usuário do localStorage
-  const userData = localStorage.getItem("userData");
-  const user = userData ? JSON.parse(userData) : null;
 
   const handleLogout = () => {
     console.log("🔒 [AUTH] Fazendo logout");
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("userData");
-    window.location.href = "/login";
+    logout();
   };
 
   return (

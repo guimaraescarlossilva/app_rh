@@ -6,6 +6,8 @@ import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./migrate-sql";
 import { randomUUID } from 'crypto';
 import { checkConnection } from "./db";
+import { connectPrisma, checkPrismaConnection } from "./prisma";
+import { createDefaultUser } from "./create-default-user";
 
 const app = express();
 
@@ -62,13 +64,15 @@ app.use((req, res, next) => {
 // Health check endpoint
 app.get('/health', async (req, res) => {
   const dbHealthy = await checkConnection();
+  const prismaHealthy = await checkPrismaConnection();
   const health = {
-    status: dbHealthy ? 'healthy' : 'unhealthy',
+    status: (dbHealthy && prismaHealthy) ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
-    database: dbHealthy ? 'connected' : 'disconnected'
+    database: dbHealthy ? 'connected' : 'disconnected',
+    prisma: prismaHealthy ? 'connected' : 'disconnected'
   };
   
-  res.status(dbHealthy ? 200 : 503).json(health);
+  res.status((dbHealthy && prismaHealthy) ? 200 : 503).json(health);
 });
 
 // Register routes
@@ -109,10 +113,20 @@ async function startServer() {
   try {
     console.log("🚀 [SERVER] Iniciando servidor...");
     
+    // Connect to Prisma
+    console.log("🔗 [SERVER] Conectando ao Prisma...");
+    await connectPrisma();
+    console.log("✅ [SERVER] Prisma conectado com sucesso");
+    
     // Run migrations
     console.log("🔄 [SERVER] Executando migrações do banco...");
     await runMigrations();
     console.log("✅ [SERVER] Migrações concluídas com sucesso");
+    
+    // Create default user
+    console.log("👤 [SERVER] Criando usuário padrão...");
+    await createDefaultUser();
+    console.log("✅ [SERVER] Usuário padrão criado com sucesso");
     
     // Register routes
     console.log("🛣️ [SERVER] Registrando rotas...");

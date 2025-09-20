@@ -64,3 +64,4 @@ jspm_packages/
 
 # Migrations (keep the schema but ignore generated migrations)
 migrations/
+/generated/prisma

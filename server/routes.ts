@@ -1,7 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage-sql";
-// Schema validation removed - using direct SQL storage
+import { storage } from "./storage-prisma";
 import bcrypt from "bcrypt";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -9,18 +8,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       console.log("🔍 [API] POST /api/auth/login - Tentativa de login");
-      const { email, password } = req.body;
+      const { cpf, password } = req.body;
       
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email e senha são obrigatórios" });
+      if (!cpf || !password) {
+        return res.status(400).json({ message: "CPF e senha são obrigatórios" });
       }
 
-      console.log("🔍 [API] POST /api/auth/login - Buscando usuário:", email);
-      const user = await storage.getUserByEmail(email);
+      console.log("🔍 [API] POST /api/auth/login - Buscando usuário por CPF:", cpf);
+      const user = await storage.getUserByCpf(cpf);
       
       if (!user) {
         console.log("❌ [API] POST /api/auth/login - Usuário não encontrado");
         return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+
+      if (!user.active) {
+        console.log("❌ [API] POST /api/auth/login - Usuário inativo");
+        return res.status(401).json({ message: "Usuário inativo" });
       }
 
       console.log("🔍 [API] POST /api/auth/login - Verificando senha");
