@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 
 export default function Login() {
   const [cpf, setCpf] = useState("");
@@ -17,6 +17,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { login: authLogin } = useAuth();
 
   // Função para aplicar máscara de CPF
   const formatCPF = (value: string) => {
@@ -48,33 +49,24 @@ export default function Login() {
     try {
       console.log("🔍 [LOGIN] Tentativa de login com CPF:", cpf);
       
-      const response = await apiRequest("POST", "/api/auth/login", {
-        cpf,
-        password
-      });
-
-      const data = await response.json();
+      // Usa o hook de autenticação
+      await authLogin(cpf, password);
       
-      if (response.ok) {
-        console.log("✅ [LOGIN] Login bem-sucedido:", data.user);
-        
-        // Armazena dados do usuário no localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('isAuthenticated', 'true');
-        
-        toast({
-          title: "Login realizado com sucesso",
-          description: `Bem-vindo, ${data.user.name}!`,
-        });
-        
-        // Redireciona para o dashboard
+      console.log("✅ [LOGIN] Login bem-sucedido via hook de autenticação");
+      
+      toast({
+        title: "Login realizado com sucesso",
+        description: "Bem-vindo ao sistema!",
+      });
+      
+      // Aguarda um pouco para o estado ser atualizado
+      setTimeout(() => {
         setLocation('/dashboard');
-      } else {
-        setError(data.message || "Erro ao fazer login");
-      }
+      }, 100);
+      
     } catch (error) {
       console.error("❌ [LOGIN] Erro no login:", error);
-      setError("Erro ao conectar com o servidor");
+      setError(error instanceof Error ? error.message : "Erro ao conectar com o servidor");
     } finally {
       setIsLoading(false);
     }

@@ -116,9 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (cpf: string, password: string) => {
     setIsLoading(true);
     try {
+      console.log('🔍 [AUTH] Iniciando processo de login...');
       const response = await apiRequest('POST', '/api/auth/login', { cpf, password });
       const data = await response.json();
       
+      console.log('✅ [AUTH] Login bem-sucedido, definindo usuário:', data.user);
       setUser(data.user);
       
       // Armazenar dados de autenticação
@@ -131,8 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Definir expiração (8 horas)
       const expiryTime = Date.now() + 8 * 60 * 60 * 1000;
       localStorage.setItem(AUTH_EXPIRY_KEY, expiryTime.toString());
+      
+      console.log('✅ [AUTH] Dados salvos no localStorage, usuário autenticado');
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('❌ [AUTH] Erro no login:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -194,17 +198,28 @@ export function useRequireAuth() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (isLoading) return;
+      console.log('🔍 [REQUIRE_AUTH] Verificando autenticação:', { isAuthenticated, isLoading });
+      
+      if (isLoading) {
+        console.log('⏳ [REQUIRE_AUTH] Ainda carregando, aguardando...');
+        return;
+      }
       
       if (!isAuthenticated) {
+        console.log('❌ [REQUIRE_AUTH] Não autenticado, tentando refresh...');
         // Tentar refresh antes de redirecionar
         setIsRefreshing(true);
         const refreshed = await refreshAuth();
         setIsRefreshing(false);
         
         if (!refreshed) {
+          console.log('❌ [REQUIRE_AUTH] Refresh falhou, redirecionando para login');
           setLocation('/login');
+        } else {
+          console.log('✅ [REQUIRE_AUTH] Refresh bem-sucedido');
         }
+      } else {
+        console.log('✅ [REQUIRE_AUTH] Usuário autenticado');
       }
     };
     
