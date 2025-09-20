@@ -7,6 +7,7 @@ import { AuthProvider, useRequireAuth } from "@/hooks/use-auth";
 import Layout from "@/components/layout/layout";
 import { Suspense, lazy } from 'react';
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { usePrefetch } from './hooks/use-prefetch';
 
 // Lazy loading de componentes para melhorar performance
 const Login = lazy(() => import("@/pages/login"));
@@ -57,7 +58,6 @@ function ProtectedRouter() {
 
 function Router() {
   // Integração do hook de prefetch para melhorar navegação
-  const { usePrefetch } = require('./hooks/use-prefetch');
   usePrefetch();
   
   return (
