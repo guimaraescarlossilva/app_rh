@@ -9,6 +9,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["rh_db"]
 }
   // Usuários do sistema
   model User {
@@ -24,7 +25,7 @@ datasource db {
     userGroups   UserGroup[]
     userBranches UserBranch[]
 
-    @@map("rh_db.users")
+    @@schema("rh_db")
   }
 
   // Filiais
@@ -47,7 +48,7 @@ datasource db {
     userBranches UserBranch[]
     employees    Employee[]
 
-    @@map("rh_db.branches")
+    @@schema("rh_db")
   }
 
   // Grupos de permissão
@@ -61,7 +62,7 @@ datasource db {
     userGroups       UserGroup[]
     modulePermissions ModulePermission[]
 
-    @@map("rh_db.permission_groups")
+    @@schema("rh_db")
   }
 
   // Relacionamento usuário-grupo
@@ -76,7 +77,7 @@ datasource db {
     group  PermissionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
     @@unique([userId, groupId])
-    @@map("rh_db.user_groups")
+    @@schema("rh_db")
   }
 
   // Relacionamento usuário-filial
@@ -91,7 +92,7 @@ datasource db {
     branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
     @@unique([userId, branchId])
-    @@map("rh_db.user_branches")
+    @@schema("rh_db")
   }
 
   // Permissões de módulos
@@ -108,7 +109,7 @@ datasource db {
     group PermissionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
     @@unique([groupId, module])
-    @@map("rh_db.module_permissions")
+    @@schema("rh_db")
   }
 
   // Cargos
@@ -120,8 +121,8 @@ datasource db {
 
     // Relacionamentos
     employees Employee[]
-
-    @@map("rh_db.job_positions")
+    
+    @@schema("rh_db")
   }
 
   // Funcionários
@@ -150,7 +151,7 @@ datasource db {
     advances   Advance[]
     payroll    Payroll[]
 
-    @@map("rh_db.employees")
+    @@schema("rh_db")
   }
 
   // Férias
@@ -170,7 +171,7 @@ datasource db {
     // Relacionamentos
     employee Employee @relation(fields: [employeeId], references: [id])
 
-    @@map("rh_db.vacations")
+    @@schema("rh_db")
   }
 
   // Demissões
@@ -184,7 +185,7 @@ datasource db {
     // Relacionamentos
     employee Employee @relation(fields: [employeeId], references: [id])
 
-    @@map("rh_db.terminations")
+    @@schema("rh_db")
   }
 
   // Adiantamentos
@@ -199,7 +200,7 @@ datasource db {
     // Relacionamentos
     employee Employee @relation(fields: [employeeId], references: [id])
 
-    @@map("rh_db.advances")
+    @@schema("rh_db")
   }
 
   // Folha de pagamento
@@ -242,23 +243,23 @@ datasource db {
     // Relacionamentos
     employee Employee @relation(fields: [employeeId], references: [id])
 
-    @@map("rh_db.payroll")
+    @@schema("rh_db")
   }
 
   // Enums
-  enum EmployeeStatus {
-    ATIVO
-    INATIVO
-    AFASTADO
+enum EmployeeStatus {
+  ATIVO
+  INATIVO
+  AFASTADO
 
-    @@map("rh_db.employee_status")
-  }
+  @@schema("rh_db")
+}
 
   enum VacationStatus {
-    PENDENTE
-    APROVADO
-    REJEITADO
-    EM_GOZO
+  PENDENTE
+  APROVADO
+  REJEITADO
+  EM_GOZO
 
-    @@map("rh_db.vacation_status")
-  }
+  @@schema("rh_db")
+}

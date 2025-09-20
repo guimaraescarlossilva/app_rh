@@ -60,6 +60,7 @@ export async function runMigrations() {
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
+        cpf TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
         active BOOLEAN DEFAULT true NOT NULL,
         created_at TIMESTAMP DEFAULT now() NOT NULL

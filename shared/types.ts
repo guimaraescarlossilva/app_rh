@@ -88,6 +88,43 @@ export interface Employee {
   updatedAt: string;
 }
 
+// Tipos para formulários otimizados
+export interface FormField {
+  name: string;
+  label: string;
+  type: 'text' | 'number' | 'email' | 'password' | 'date' | 'select' | 'textarea' | 'checkbox';
+  required?: boolean;
+  placeholder?: string;
+  validation?: (value: string) => string | null;
+  options?: { value: string; label: string }[];
+  defaultValue?: string | boolean;
+}
+
+export interface FormConfig {
+  entityName: string;
+  title: string;
+  fields: FormField[];
+  invalidateQueries: string[];
+  successMessage?: string;
+  errorMessage?: string;
+}
+
+// Tipos para operações de API
+export interface ApiResponse<T> {
+  data?: T;
+  error?: string;
+  message?: string;
+  status: number;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export interface InsertEmployee {
   name: string;
   cpf: string;

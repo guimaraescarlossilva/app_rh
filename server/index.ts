@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 import { checkConnection } from "./db";
 import { connectPrisma, checkPrismaConnection } from "./prisma";
 import { createDefaultUser } from "./create-default-user";
+import { addCpfField } from "./add-cpf-field";
 
 const app = express();
 
@@ -122,6 +123,11 @@ async function startServer() {
     console.log("🔄 [SERVER] Executando migrações do banco...");
     await runMigrations();
     console.log("✅ [SERVER] Migrações concluídas com sucesso");
+    
+    // Add CPF field if needed
+    console.log("🔄 [SERVER] Verificando campo CPF...");
+    await addCpfField();
+    console.log("✅ [SERVER] Campo CPF verificado com sucesso");
     
     // Create default user
     console.log("👤 [SERVER] Criando usuário padrão...");
