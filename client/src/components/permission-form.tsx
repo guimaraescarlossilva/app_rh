@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { 
   type User as SystemUser, 
@@ -40,6 +41,7 @@ interface PermissionFormProps {
 const userFormSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido"),
+  cpf: z.string().min(11, "CPF é obrigatório"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
   branchIds: z.array(z.string()).min(1, "Selecione pelo menos uma filial"),
@@ -59,10 +61,18 @@ export default function PermissionForm({ type, data, onSuccess }: PermissionForm
 
   const { data: permissionGroups = [] } = useQuery({
     queryKey: ["/api/permission-groups"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/permission-groups");
+      return response.json();
+    },
   });
 
   const { data: branches = [] } = useQuery({
     queryKey: ["/api/branches"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/branches");
+      return response.json();
+    },
   });
 
   const userForm = useForm<InsertUser & { confirmPassword: string; branchIds: string[] }>({
@@ -70,6 +80,7 @@ export default function PermissionForm({ type, data, onSuccess }: PermissionForm
     defaultValues: {
       name: "",
       email: "",
+      cpf: "",
       password: "",
       confirmPassword: "",
       active: true,
@@ -78,7 +89,7 @@ export default function PermissionForm({ type, data, onSuccess }: PermissionForm
   });
 
   const groupForm = useForm<InsertPermissionGroup>({
-    resolver: zodResolver(insertPermissionGroupSchema),
+    resolver: zodResolver(groupFormSchema),
     defaultValues: {
       name: "",
       description: "",
@@ -93,9 +104,11 @@ export default function PermissionForm({ type, data, onSuccess }: PermissionForm
       userForm.reset({
         name: user.name,
         email: user.email,
+        cpf: user.cpf,
         password: "",
         confirmPassword: "",
         active: user.active,
+        branchIds: [],
       });
     } else if (data && type === "group") {
       const group = data as PermissionGroup;
@@ -247,6 +260,20 @@ export default function PermissionForm({ type, data, onSuccess }: PermissionForm
                 <FormLabel>E-mail</FormLabel>
                 <FormControl>
                   <Input type="email" placeholder="email@exemplo.com" {...field} data-testid="input-email" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={userForm.control}
+            name="cpf"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CPF</FormLabel>
+                <FormControl>
+                  <Input placeholder="000.000.000-00" {...field} data-testid="input-cpf" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

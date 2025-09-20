@@ -63,9 +63,9 @@ export default function Permissions() {
     error: groupsError,
     refetch: refetchGroups
   } = useQuery({
-    queryKey: ["/api/permissions/groups"],
+    queryKey: ["/api/permission-groups"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/permissions/groups");
+      const response = await apiRequest("GET", "/api/permission-groups");
       return response.json();
     },
     retry: 3,
