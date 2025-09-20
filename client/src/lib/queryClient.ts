@@ -21,7 +21,9 @@ export async function apiRequest(
   try {
     console.log(`🔍 [API_REQUEST] ${method} ${url}`, data ? { data } : '');
     
-    const res = await fetch(url, {
+    const baseUrl = window.location.origin;
+    const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+    const res = await fetch(fullUrl, {
       method,
       headers: data ? { "Content-Type": "application/json" } : {},
       body: data ? JSON.stringify(data) : undefined,
@@ -58,7 +60,9 @@ export const getQueryFn: <T>(options: {
       const url = queryKey.join("/") as string;
       console.log(`🔍 [QUERY_FN] GET ${url}`);
       
-      const res = await fetch(url);
+      const baseUrl = window.location.origin;
+      const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+      const res = await fetch(fullUrl);
       console.log(`📊 [QUERY_FN] GET ${url} - Status: ${res.status} ${res.statusText}`);
 
       if (unauthorizedBehavior === "returnNull" && res.status === 401) {

@@ -5,6 +5,42 @@ import bcrypt from "bcrypt";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
+  app.post("/api/auth/refresh", async (req, res) => {
+    try {
+      console.log("🔍 [API] POST /api/auth/refresh - Tentativa de refresh");
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Token é obrigatório" });
+      }
+
+      // Por enquanto, vamos apenas retornar o usuário atual
+      // Em uma implementação real, você validaria o token e buscaria o usuário
+      const user = await storage.getUserByCpf("admin");
+      
+      if (!user) {
+        console.log("❌ [API] POST /api/auth/refresh - Usuário não encontrado");
+        return res.status(401).json({ message: "Token inválido" });
+      }
+
+      if (!user.active) {
+        console.log("❌ [API] POST /api/auth/refresh - Usuário inativo");
+        return res.status(401).json({ message: "Usuário inativo" });
+      }
+
+      console.log("✅ [API] POST /api/auth/refresh - Refresh bem-sucedido");
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ 
+        message: "Refresh realizado com sucesso",
+        user: userWithoutPassword,
+        token: "dummy_token" // Em uma implementação real, você geraria um novo token
+      });
+    } catch (error) {
+      console.error("❌ [API] POST /api/auth/refresh - Erro:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     try {
       console.log("🔍 [API] POST /api/auth/login - Tentativa de login");
@@ -40,7 +76,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...userWithoutPassword } = user;
       res.json({ 
         message: "Login realizado com sucesso",
-        user: userWithoutPassword 
+        user: userWithoutPassword,
+        token: "dummy_token" // Em uma implementação real, você geraria um token JWT
       });
     } catch (error) {
       console.error("❌ [API] POST /api/auth/login - Erro:", error);
