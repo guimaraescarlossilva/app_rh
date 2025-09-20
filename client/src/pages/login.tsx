@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   // Função para aplicar máscara de CPF
   const formatCPF = (value: string) => {
@@ -68,7 +68,7 @@ export default function Login() {
         });
         
         // Redireciona para o dashboard
-        navigate('/dashboard');
+        setLocation('/dashboard');
       } else {
         setError(data.message || "Erro ao fazer login");
       }
